@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Auto Backup config (Phase 5): includes the Room database in Android's
+   free backup-to-Drive-appdata mechanism. Nothing else needs backing up.
+-->
+<full-backup-content>
+    <include domain="database" path="." />
+</full-backup-content>
