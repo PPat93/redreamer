@@ -1,0 +1,53 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Files for the ART/Dalvik VM
+*.class
+
+# Java class files
+*.jar
+
+# Generated files
+bin/
+gen/
+out/
+build/
+/app/build/
+
+# Gradle files
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Local configuration file (contains SDK path, machine-specific)
+local.properties
+
+# Android Studio / IntelliJ project files (machine-specific, regenerated on open)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Keystore files — never commit signing keys
+*.jks
+*.keystore
+
+# Google services / Drive backup OAuth credentials (Phase 5)
+google-services.json
+/app/src/*/google-services.json
+secrets.properties
+
+# Log/profiler output
+*.log
+*.hprof
+/captures
+.externalNativeBuild
+.cxx
+
+# OS files
+.DS_Store
+Thumbs.db

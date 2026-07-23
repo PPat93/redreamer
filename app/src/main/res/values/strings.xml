@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ReDreamer</string>
+
+    <string name="dream_list_title">Dreams</string>
+    <string name="dream_list_empty_title">No dreams yet</string>
+    <string name="dream_list_empty_body">Tap + to write down your first dream.</string>
+    <string name="dream_add_new">New dream</string>
+
+    <string name="dream_editor_title_new">New dream</string>
+    <string name="dream_editor_title_edit">Edit dream</string>
+    <string name="dream_field_title">Title</string>
+    <string name="dream_field_content">What happened in the dream?</string>
+    <string name="dream_field_notes">Notes / interpretation</string>
+    <string name="dream_field_date">Dream date</string>
+    <string name="dream_field_clarity">Clarity</string>
+    <string name="dream_field_lucid">This was a lucid dream</string>
+    <string name="dream_field_lucidity">Lucidity</string>
+    <string name="dream_field_nightmare">Nightmare</string>
+    <string name="dream_field_recurring">Recurring dream</string>
+    <string name="dream_field_moods">Mood</string>
+    <string name="dream_field_tags">Tags</string>
+    <string name="dream_add_tag">Add tag</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="dream_detail_title">Dream</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_share">Share</string>
+    <string name="action_copy">Copy dream</string>
+    <string name="action_copy_text_only">Copy text only</string>
+    <string name="dream_deleted_to_bin">Moved to bin</string>
+
+    <string name="dream_detail_clarity_value">Clarity: %1$d/10</string>
+    <string name="dream_detail_lucidity_value">Lucid dream — lucidity %1$d/10</string>
+    <string name="dream_detail_nightmare_label">Nightmare</string>
+    <string name="dream_detail_recurring_label">Recurring dream</string>
+    <string name="dream_delete_confirm_title">Delete this dream?</string>
+    <string name="dream_delete_confirm_body">It will be moved to the bin and permanently deleted after 30 days.</string>
+</resources>
