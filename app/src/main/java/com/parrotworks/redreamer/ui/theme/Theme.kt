@@ -8,24 +8,50 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColors = darkColorScheme(
-    primary = DreamIndigo80,
-    secondary = DreamViolet80,
-    tertiary = DreamGold80,
+    primary = Violet80,
+    onPrimary = Violet20,
+    primaryContainer = Violet30,
+    onPrimaryContainer = Violet90,
+    secondary = Blue80,
+    onSecondary = Blue20,
+    secondaryContainer = Blue30,
+    onSecondaryContainer = Blue90,
+    tertiary = Gold80,
+    onTertiary = Gold20,
+    tertiaryContainer = Gold30,
+    onTertiaryContainer = Gold90,
+    background = NightBackground,
+    onBackground = Color(0xFFE6E1E5),
+    surface = NightSurface,
+    onSurface = Color(0xFFE6E1E5),
+    surfaceVariant = NightSurfaceVariant,
+    onSurfaceVariant = Color(0xFFCAC4D0),
+    outline = Color(0xFF938F99),
 )
 
 private val LightColors = lightColorScheme(
-    primary = DreamIndigo40,
-    secondary = DreamViolet40,
-    tertiary = DreamGold40,
+    primary = Violet40,
+    onPrimary = Color.White,
+    primaryContainer = Violet90,
+    onPrimaryContainer = Violet30,
+    secondary = Blue40,
+    onSecondary = Color.White,
+    secondaryContainer = Blue90,
+    onSecondaryContainer = Blue30,
+    tertiary = Gold40,
+    onTertiary = Color.White,
+    tertiaryContainer = Gold90,
+    onTertiaryContainer = Gold30,
 )
 
 @Composable
 fun ReDreamerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {

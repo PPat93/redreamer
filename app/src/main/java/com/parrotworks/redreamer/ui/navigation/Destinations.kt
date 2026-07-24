@@ -3,7 +3,7 @@ package com.parrotworks.redreamer.ui.navigation
 object Destinations {
     const val ARG_DREAM_ID = "dreamId"
 
-    const val DREAM_LIST = "dreamList"
+    const val HOME = "home"
     const val DREAM_DETAIL = "dreamDetail/{$ARG_DREAM_ID}"
     const val DREAM_EDITOR = "dreamEditor?$ARG_DREAM_ID={$ARG_DREAM_ID}"
 

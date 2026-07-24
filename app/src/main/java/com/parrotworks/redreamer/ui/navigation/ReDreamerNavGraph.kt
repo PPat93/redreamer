@@ -9,15 +9,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.parrotworks.redreamer.ui.detail.DreamDetailScreen
 import com.parrotworks.redreamer.ui.editor.DreamEditorScreen
-import com.parrotworks.redreamer.ui.list.DreamListScreen
+import com.parrotworks.redreamer.ui.home.HomeScreen
 
 @Composable
 fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()) {
-    NavHost(navController = navController, startDestination = Destinations.DREAM_LIST) {
-        composable(Destinations.DREAM_LIST) {
-            DreamListScreen(
+    NavHost(navController = navController, startDestination = Destinations.HOME) {
+        composable(Destinations.HOME) {
+            HomeScreen(
                 onDreamClick = { id -> navController.navigate(Destinations.dreamDetail(id)) },
-                onAddClick = { navController.navigate(Destinations.dreamEditorNew()) },
+                onAddDreamClick = { navController.navigate(Destinations.dreamEditorNew()) },
             )
         }
 
