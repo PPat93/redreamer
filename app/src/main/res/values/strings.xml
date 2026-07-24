@@ -38,4 +38,11 @@
     <string name="dream_detail_recurring_label">Recurring dream</string>
     <string name="dream_delete_confirm_title">Delete this dream?</string>
     <string name="dream_delete_confirm_body">It will be moved to the bin and permanently deleted after 30 days.</string>
+
+    <string name="tab_stats">Stats</string>
+    <string name="tab_settings">Settings</string>
+    <string name="stats_coming_soon_title">Statistics are coming soon</string>
+    <string name="stats_coming_soon_body">Once you\'ve logged a few dreams, this screen will show your most common tags, moods, clarity trends, and more.</string>
+    <string name="settings_coming_soon_title">Settings are coming soon</string>
+    <string name="settings_coming_soon_body">App lock, backups, and reality-check notifications will be configurable here in a future update.</string>
 </resources>
