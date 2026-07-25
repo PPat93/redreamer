@@ -15,7 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,10 +45,13 @@ fun DreamListContent(
     modifier: Modifier = Modifier,
     viewModel: DreamListViewModel = hiltViewModel(),
 ) {
-    val dreams by viewModel.dreams.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val filters by viewModel.filters.collectAsStateWithLifecycle()
+    val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
     val selectedIds by viewModel.selectedIds.collectAsStateWithLifecycle()
     val isSelectionMode = selectedIds.isNotEmpty()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
         if (isSelectionMode) {
@@ -54,17 +60,38 @@ fun DreamListContent(
                 onClear = viewModel::clearSelection,
                 onDeleteClick = { showDeleteConfirm = true },
             )
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                BadgedBox(badge = {
+                    if (filters.activeCount > 0) {
+                        Badge { Text(filters.activeCount.toString()) }
+                    }
+                }) {
+                    IconButton(onClick = { showFilterSheet = true }) {
+                        Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.filters_title))
+                    }
+                }
+            }
         }
 
-        if (dreams.isEmpty()) {
-            EmptyDreamList(modifier = Modifier.fillMaxSize())
+        if (uiState.dreams.isEmpty()) {
+            if (uiState.hasAnyDreams) {
+                NoMatchingDreams(onClearFilters = viewModel::clearFilters, modifier = Modifier.fillMaxSize())
+            } else {
+                EmptyDreamList(modifier = Modifier.fillMaxSize())
+            }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(dreams, key = { it.dream.id }) { dreamWithTags ->
+                items(uiState.dreams, key = { it.dream.id }) { dreamWithTags ->
                     val id = dreamWithTags.dream.id
                     DreamCard(
                         dreamWithTags = dreamWithTags,
@@ -77,6 +104,21 @@ fun DreamListContent(
                 }
             }
         }
+    }
+
+    if (showFilterSheet) {
+        FilterBottomSheet(
+            filters = filters,
+            availableTags = availableTags,
+            onDismiss = { showFilterSheet = false },
+            onLucidToggle = viewModel::setLucidOnly,
+            onNightmareToggle = viewModel::setNightmareOnly,
+            onRecurringToggle = viewModel::setRecurringOnly,
+            onStartDateChange = viewModel::setStartDate,
+            onEndDateChange = viewModel::setEndDate,
+            onTagToggle = viewModel::toggleTagFilter,
+            onClearAll = viewModel::clearFilters,
+        )
     }
 
     if (showDeleteConfirm) {
@@ -155,6 +197,25 @@ private fun EmptyDreamList(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun NoMatchingDreams(onClearFilters: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.dream_list_no_matches_title), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.dream_list_no_matches_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onClearFilters) {
+                Text(stringResource(R.string.filters_clear_all))
+            }
         }
     }
 }

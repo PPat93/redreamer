@@ -86,4 +86,17 @@
     <string name="dream_selected_count">%1$d selected</string>
     <string name="dream_mass_delete_confirm_title">Delete %1$d dreams?</string>
     <string name="dream_mass_delete_confirm_body">They will be moved to the bin and permanently deleted after 30 days.</string>
+
+    <string name="dream_list_no_matches_title">No matching dreams</string>
+    <string name="dream_list_no_matches_body">Try adjusting or clearing your filters.</string>
+
+    <string name="filters_title">Filters</string>
+    <string name="filters_clear_all">Clear all</string>
+    <string name="filters_dream_type">Dream type</string>
+    <string name="filters_lucid_chip">Lucid</string>
+    <string name="filters_nightmare_chip">Nightmare</string>
+    <string name="filters_recurring_chip">Recurring</string>
+    <string name="filters_date_range">Date range</string>
+    <string name="filters_from_date">From</string>
+    <string name="filters_to_date">To</string>
 </resources>

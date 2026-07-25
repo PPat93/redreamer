@@ -55,10 +55,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.data.Mood
+import com.parrotworks.redreamer.ui.components.DreamDatePickerDialog
 import com.parrotworks.redreamer.ui.components.displayName
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
@@ -238,29 +237,11 @@ private fun DreamDatePickerField(date: LocalDate, onDateChange: (LocalDate) -> U
     }
 
     if (showPicker) {
-        val state = androidx.compose.material3.rememberDatePickerState(
-            initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
-        androidx.compose.material3.DatePickerDialog(
+        DreamDatePickerDialog(
+            initialDate = date,
             onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        onDateChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                    showPicker = false
-                }) {
-                    Text(stringResource(R.string.action_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            },
-        ) {
-            androidx.compose.material3.DatePicker(state = state)
-        }
+            onDateSelected = onDateChange,
+        )
     }
 }
 
