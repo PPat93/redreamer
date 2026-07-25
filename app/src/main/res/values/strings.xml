@@ -82,4 +82,8 @@
     <string name="tag_delete_confirm_body_none">This tag isn\'t used by any dreams.</string>
     <string name="tag_delete_confirm_body_one">This tag is used by 1 dream. Deleting it won\'t affect the dream itself.</string>
     <string name="tag_delete_confirm_body_many">This tag is used by %1$d dreams. Deleting it won\'t affect those dreams.</string>
+
+    <string name="dream_selected_count">%1$d selected</string>
+    <string name="dream_mass_delete_confirm_title">Delete %1$d dreams?</string>
+    <string name="dream_mass_delete_confirm_body">They will be moved to the bin and permanently deleted after 30 days.</string>
 </resources>
