@@ -99,4 +99,8 @@
     <string name="filters_date_range">Date range</string>
     <string name="filters_from_date">From</string>
     <string name="filters_to_date">To</string>
+
+    <string name="search_placeholder">Search dreams</string>
+    <string name="dream_list_no_search_results_title">No results</string>
+    <string name="dream_list_no_search_results_body">No dreams match your search.</string>
 </resources>

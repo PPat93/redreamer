@@ -16,12 +16,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,24 +51,35 @@ fun DreamListContent(
     val filters by viewModel.filters.collectAsStateWithLifecycle()
     val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
     val selectedIds by viewModel.selectedIds.collectAsStateWithLifecycle()
+    val isSearchBarVisible by viewModel.isSearchBarVisible.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val isSelectionMode = selectedIds.isNotEmpty()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        if (isSelectionMode) {
-            SelectionActionBar(
+        when {
+            isSelectionMode -> SelectionActionBar(
                 selectedCount = selectedIds.size,
                 onClear = viewModel::clearSelection,
                 onDeleteClick = { showDeleteConfirm = true },
             )
-        } else {
-            Row(
+
+            isSearchBarVisible -> DreamSearchBar(
+                query = searchQuery,
+                onQueryChange = viewModel::setSearchQuery,
+                onClose = viewModel::closeSearch,
+            )
+
+            else -> Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
+                IconButton(onClick = viewModel::openSearch) {
+                    Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_placeholder))
+                }
                 BadgedBox(badge = {
                     if (filters.activeCount > 0) {
                         Badge { Text(filters.activeCount.toString()) }
@@ -80,10 +93,10 @@ fun DreamListContent(
         }
 
         if (uiState.dreams.isEmpty()) {
-            if (uiState.hasAnyDreams) {
-                NoMatchingDreams(onClearFilters = viewModel::clearFilters, modifier = Modifier.fillMaxSize())
-            } else {
-                EmptyDreamList(modifier = Modifier.fillMaxSize())
+            when {
+                uiState.isSearchActive -> NoSearchResults(modifier = Modifier.fillMaxSize())
+                uiState.hasAnyDreams -> NoMatchingDreams(onClearFilters = viewModel::clearFilters, modifier = Modifier.fillMaxSize())
+                else -> EmptyDreamList(modifier = Modifier.fillMaxSize())
             }
         } else {
             LazyColumn(
@@ -161,6 +174,29 @@ fun DreamListContent(
 }
 
 @Composable
+private fun DreamSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        singleLine = true,
+        placeholder = { Text(stringResource(R.string.search_placeholder)) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        trailingIcon = {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
+            }
+        },
+    )
+}
+
+@Composable
 private fun SelectionActionBar(
     selectedCount: Int,
     onClear: () -> Unit,
@@ -216,6 +252,21 @@ private fun NoMatchingDreams(onClearFilters: () -> Unit, modifier: Modifier = Mo
             TextButton(onClick = onClearFilters) {
                 Text(stringResource(R.string.filters_clear_all))
             }
+        }
+    }
+}
+
+@Composable
+private fun NoSearchResults(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.dream_list_no_search_results_title), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.dream_list_no_search_results_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -2,6 +2,8 @@ package com.parrotworks.redreamer.repository
 
 import com.parrotworks.redreamer.data.Dream
 import com.parrotworks.redreamer.data.DreamDao
+import com.parrotworks.redreamer.data.DreamFts
+import com.parrotworks.redreamer.data.DreamFtsDao
 import com.parrotworks.redreamer.data.DreamTagCrossRef
 import com.parrotworks.redreamer.data.DreamWithTags
 import com.parrotworks.redreamer.data.Mood
@@ -14,11 +16,14 @@ import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 class DreamRepository @Inject constructor(
     private val dreamDao: DreamDao,
     private val tagDao: TagDao,
+    private val dreamFtsDao: DreamFtsDao,
 ) {
     fun observeLiveDreams(): Flow<List<DreamWithTags>> = dreamDao.observeLiveDreams()
 
@@ -50,6 +55,21 @@ class DreamRepository @Inject constructor(
 
     suspend fun deleteTag(tagId: Long) {
         tagDao.deleteTagById(tagId)
+    }
+
+    /** Searches title/content/notes of live dreams only. Terms are quoted-prefix-matched and ANDed together. */
+    fun searchDreams(rawQuery: String): Flow<List<DreamWithTags>> {
+        val ftsQuery = buildFtsQuery(rawQuery) ?: return flowOf(emptyList())
+        return dreamDao.searchDreams(ftsQuery)
+    }
+
+    private fun buildFtsQuery(rawQuery: String): String? {
+        val terms = rawQuery.trim()
+            .split(Regex("\\s+"))
+            .map { it.replace("\"", "").trim() }
+            .filter { it.isNotEmpty() }
+        if (terms.isEmpty()) return null
+        return terms.joinToString(" ") { "\"$it\"*" }
     }
 
     /** All figures are derived from live (non-binned) dreams only, recomputed reactively as they change. */
@@ -151,9 +171,12 @@ class DreamRepository @Inject constructor(
         )
 
         val dreamId = if (id == null) {
-            dreamDao.insertDream(dream)
+            val newId = dreamDao.insertDream(dream)
+            dreamFtsDao.insert(DreamFts(dreamId = newId, title = title, content = content, notes = notes))
+            newId
         } else {
             dreamDao.updateDream(dream)
+            dreamFtsDao.update(id, title = title, content = content, notes = notes)
             id
         }
 
@@ -169,16 +192,25 @@ class DreamRepository @Inject constructor(
         return dreamId
     }
 
+    /** Binned dreams drop out of the search index; [restore] rebuilds their entry. */
     suspend fun softDelete(id: Long) {
         dreamDao.softDelete(id, Instant.now())
+        dreamFtsDao.deleteByDreamId(id)
     }
 
     suspend fun softDeleteAll(ids: List<Long>) {
         dreamDao.softDeleteAll(ids, Instant.now())
+        ids.forEach { dreamFtsDao.deleteByDreamId(it) }
     }
 
     suspend fun restore(id: Long) {
         dreamDao.restore(id)
+        val restored = dreamDao.observeDreamWithTags(id).first()
+        if (restored != null) {
+            dreamFtsDao.insert(
+                DreamFts(dreamId = id, title = restored.dream.title, content = restored.dream.content, notes = restored.dream.notes),
+            )
+        }
     }
 
     suspend fun deleteForever(id: Long) {

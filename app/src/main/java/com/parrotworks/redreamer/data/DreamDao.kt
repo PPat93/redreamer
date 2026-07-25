@@ -32,6 +32,17 @@ interface DreamDao {
     @Query("SELECT COUNT(*) FROM dreams WHERE deletedAt IS NOT NULL")
     fun observeBinnedCount(): Flow<Int>
 
+    @Transaction
+    @Query(
+        """
+        SELECT dreams.* FROM dreams
+        JOIN dream_fts ON dreams.id = dream_fts.rowid
+        WHERE dreams.deletedAt IS NULL AND dream_fts MATCH :ftsQuery
+        ORDER BY dreams.dreamDate DESC, dreams.createdAt DESC
+        """,
+    )
+    fun searchDreams(ftsQuery: String): Flow<List<DreamWithTags>>
+
     @Query("UPDATE dreams SET deletedAt = :deletedAt WHERE id = :id")
     suspend fun softDelete(id: Long, deletedAt: Instant)
 
