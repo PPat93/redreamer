@@ -26,4 +26,8 @@ class TagManagementViewModel @Inject constructor(
     fun deleteTag(tagId: Long) {
         viewModelScope.launch { repository.deleteTag(tagId) }
     }
+
+    fun addTag(name: String) {
+        viewModelScope.launch { repository.createTag(name) }
+    }
 }

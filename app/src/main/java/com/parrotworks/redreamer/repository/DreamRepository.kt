@@ -57,6 +57,15 @@ class DreamRepository @Inject constructor(
         tagDao.deleteTagById(tagId)
     }
 
+    /** Creates a standalone tag not yet attached to any dream; no-ops if one with this name (case-insensitive) already exists. */
+    suspend fun createTag(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        if (tagDao.findByName(trimmed) == null) {
+            tagDao.insertTag(Tag(name = trimmed))
+        }
+    }
+
     /** Searches title/content/notes of live dreams only. Terms are quoted-prefix-matched and ANDed together. */
     fun searchDreams(rawQuery: String): Flow<List<DreamWithTags>> {
         val ftsQuery = buildFtsQuery(rawQuery) ?: return flowOf(emptyList())

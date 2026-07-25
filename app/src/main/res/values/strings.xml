@@ -78,6 +78,8 @@
     <string name="tag_usage_many">Used in %1$d dreams</string>
     <string name="action_rename">Rename</string>
     <string name="tag_rename_dialog_title">Rename tag</string>
+    <string name="tag_add_dialog_title">New tag</string>
+    <string name="tag_add_new">New tag</string>
     <string name="tag_delete_confirm_title">Delete tag?</string>
     <string name="tag_delete_confirm_body_none">This tag isn\'t used by any dreams.</string>
     <string name="tag_delete_confirm_body_one">This tag is used by 1 dream. Deleting it won\'t affect the dream itself.</string>

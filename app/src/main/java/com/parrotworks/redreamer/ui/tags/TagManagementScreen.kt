@@ -13,11 +13,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +51,7 @@ fun TagManagementScreen(
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     var renamingTag by remember { mutableStateOf<TagWithUsage?>(null) }
     var deletingTag by remember { mutableStateOf<TagWithUsage?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -60,6 +63,11 @@ fun TagManagementScreen(
                     }
                 },
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAddDialog = true }) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.tag_add_new))
+            }
         },
     ) { paddingValues ->
         if (tags.isEmpty()) {
@@ -87,8 +95,21 @@ fun TagManagementScreen(
         }
     }
 
+    if (showAddDialog) {
+        TagNameDialog(
+            title = stringResource(R.string.tag_add_dialog_title),
+            initialName = "",
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name ->
+                showAddDialog = false
+                viewModel.addTag(name)
+            },
+        )
+    }
+
     renamingTag?.let { tag ->
-        RenameTagDialog(
+        TagNameDialog(
+            title = stringResource(R.string.tag_rename_dialog_title),
             initialName = tag.name,
             onDismiss = { renamingTag = null },
             onConfirm = { newName ->
@@ -158,7 +179,8 @@ private fun TagRow(tag: TagWithUsage, onRename: () -> Unit, onDelete: () -> Unit
 }
 
 @Composable
-private fun RenameTagDialog(
+private fun TagNameDialog(
+    title: String,
     initialName: String,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
@@ -167,7 +189,7 @@ private fun RenameTagDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.tag_rename_dialog_title)) },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 value = text,
