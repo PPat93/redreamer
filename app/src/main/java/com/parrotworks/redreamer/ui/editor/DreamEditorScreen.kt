@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AssistChip
@@ -67,6 +68,7 @@ private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy")
 fun DreamEditorScreen(
     onSaved: () -> Unit,
     onCancel: () -> Unit,
+    onManageTagsClick: () -> Unit,
     viewModel: DreamEditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -208,6 +210,7 @@ fun DreamEditorScreen(
                 onTagInputChange = viewModel::onTagInputChange,
                 onAddTag = viewModel::onAddTag,
                 onRemoveTag = viewModel::onRemoveTag,
+                onManageTagsClick = onManageTagsClick,
             )
 
             OutlinedTextField(
@@ -269,9 +272,23 @@ private fun TagEditor(
     onTagInputChange: (String) -> Unit,
     onAddTag: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
+    onManageTagsClick: () -> Unit,
 ) {
     Column {
-        Text(stringResource(R.string.dream_field_tags), style = MaterialTheme.typography.labelLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.dream_field_tags),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onManageTagsClick, modifier = Modifier.size(24.dp)) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Label,
+                    contentDescription = stringResource(R.string.tag_management_title),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(

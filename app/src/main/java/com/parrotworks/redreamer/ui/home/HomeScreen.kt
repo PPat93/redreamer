@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +50,7 @@ fun HomeScreen(
     onDreamClick: (Long) -> Unit,
     onAddDreamClick: () -> Unit,
     onBinClick: () -> Unit,
+    onManageTagsClick: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(TAB_DREAMS) }
 
@@ -58,6 +60,9 @@ fun HomeScreen(
                 TopAppBar(
                     title = { AppBrandTitle() },
                     actions = {
+                        IconButton(onClick = onManageTagsClick) {
+                            Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(R.string.tag_management_title))
+                        }
                         IconButton(onClick = onBinClick) {
                             Icon(Icons.Filled.RestoreFromTrash, contentDescription = stringResource(R.string.bin_title))
                         }

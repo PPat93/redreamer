@@ -41,10 +41,20 @@
 
     <string name="tab_stats">Stats</string>
     <string name="tab_settings">Settings</string>
-    <string name="stats_coming_soon_title">Statistics are coming soon</string>
-    <string name="stats_coming_soon_body">Once you\'ve logged a few dreams, this screen will show your most common tags, moods, clarity trends, and more.</string>
     <string name="settings_coming_soon_title">Settings are coming soon</string>
     <string name="settings_coming_soon_body">App lock, backups, and reality-check notifications will be configurable here in a future update.</string>
+
+    <string name="stats_empty_title">No dreams yet</string>
+    <string name="stats_empty_body">Log a few dreams to see your patterns here.</string>
+    <string name="stats_total_dreams_label">Total dreams</string>
+    <string name="stats_streak_label">Day streak</string>
+    <string name="stats_avg_clarity_label">Avg. clarity</string>
+    <string name="stats_lucid_label">Lucid</string>
+    <string name="stats_nightmare_label">Nightmare</string>
+    <string name="stats_recurring_label">Recurring</string>
+    <string name="stats_top_tags_title">Top tags</string>
+    <string name="stats_mood_distribution_title">Moods</string>
+    <string name="stats_dreams_per_month_title">Dreams per month</string>
 
     <string name="bin_title">Bin</string>
     <string name="bin_empty_title">Bin is empty</string>
@@ -59,4 +69,17 @@
     <string name="bin_empty_confirm_body">All dreams in the bin will be permanently deleted. This can\'t be undone.</string>
     <string name="bin_delete_forever_confirm_title">Delete forever?</string>
     <string name="bin_delete_forever_confirm_body">This dream will be permanently deleted. This can\'t be undone.</string>
+
+    <string name="tag_management_title">Manage tags</string>
+    <string name="tag_management_empty_title">No tags yet</string>
+    <string name="tag_management_empty_body">Tags you add to dreams will show up here.</string>
+    <string name="tag_usage_zero">Not used yet</string>
+    <string name="tag_usage_one">Used in 1 dream</string>
+    <string name="tag_usage_many">Used in %1$d dreams</string>
+    <string name="action_rename">Rename</string>
+    <string name="tag_rename_dialog_title">Rename tag</string>
+    <string name="tag_delete_confirm_title">Delete tag?</string>
+    <string name="tag_delete_confirm_body_none">This tag isn\'t used by any dreams.</string>
+    <string name="tag_delete_confirm_body_one">This tag is used by 1 dream. Deleting it won\'t affect the dream itself.</string>
+    <string name="tag_delete_confirm_body_many">This tag is used by %1$d dreams. Deleting it won\'t affect those dreams.</string>
 </resources>
