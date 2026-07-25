@@ -21,6 +21,8 @@ class DreamRepository @Inject constructor(
 
     fun observeBinnedDreams(): Flow<List<DreamWithTags>> = dreamDao.observeBinnedDreams()
 
+    fun observeBinnedCount(): Flow<Int> = dreamDao.observeBinnedCount()
+
     fun observeDream(id: Long): Flow<DreamWithTags?> = dreamDao.observeDreamWithTags(id)
 
     fun observeAllTags(): Flow<List<Tag>> = tagDao.observeAllTags()
@@ -97,6 +99,10 @@ class DreamRepository @Inject constructor(
     suspend fun purgeExpiredFromBin() {
         val cutoff = Instant.now().minus(BIN_RETENTION_DAYS, ChronoUnit.DAYS)
         dreamDao.purgeDeletedBefore(cutoff)
+    }
+
+    suspend fun emptyBin() {
+        dreamDao.deleteAllBinned()
     }
 
     /** Finds a tag by name or creates it, guarding against a lost race on the unique index. */

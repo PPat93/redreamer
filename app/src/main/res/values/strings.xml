@@ -45,4 +45,18 @@
     <string name="stats_coming_soon_body">Once you\'ve logged a few dreams, this screen will show your most common tags, moods, clarity trends, and more.</string>
     <string name="settings_coming_soon_title">Settings are coming soon</string>
     <string name="settings_coming_soon_body">App lock, backups, and reality-check notifications will be configurable here in a future update.</string>
+
+    <string name="bin_title">Bin</string>
+    <string name="bin_empty_title">Bin is empty</string>
+    <string name="bin_empty_body">Dreams you delete stay here for 30 days before they\'re gone for good.</string>
+    <string name="bin_deletes_today">Deletes today</string>
+    <string name="bin_deletes_in_one_day">Deletes in 1 day</string>
+    <string name="bin_deletes_in_days">Deletes in %1$d days</string>
+    <string name="action_restore">Restore</string>
+    <string name="action_delete_forever">Delete forever</string>
+    <string name="bin_empty_action">Empty bin</string>
+    <string name="bin_empty_confirm_title">Empty the bin?</string>
+    <string name="bin_empty_confirm_body">All dreams in the bin will be permanently deleted. This can\'t be undone.</string>
+    <string name="bin_delete_forever_confirm_title">Delete forever?</string>
+    <string name="bin_delete_forever_confirm_body">This dream will be permanently deleted. This can\'t be undone.</string>
 </resources>

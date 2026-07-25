@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -46,13 +48,21 @@ private const val TAB_SETTINGS = 2
 fun HomeScreen(
     onDreamClick: (Long) -> Unit,
     onAddDreamClick: () -> Unit,
+    onBinClick: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(TAB_DREAMS) }
 
     Scaffold(
         topBar = {
             Column {
-                TopAppBar(title = { AppBrandTitle() })
+                TopAppBar(
+                    title = { AppBrandTitle() },
+                    actions = {
+                        IconButton(onClick = onBinClick) {
+                            Icon(Icons.Filled.RestoreFromTrash, contentDescription = stringResource(R.string.bin_title))
+                        }
+                    },
+                )
                 TabRow(selectedTabIndex = selectedTab) {
                     Tab(
                         selected = selectedTab == TAB_DREAMS,
