@@ -5,6 +5,7 @@ object Destinations {
 
     const val HOME = "home"
     const val BIN = "bin"
+    const val TAG_MANAGEMENT = "tagManagement"
     const val DREAM_DETAIL = "dreamDetail/{$ARG_DREAM_ID}"
     const val DREAM_EDITOR = "dreamEditor?$ARG_DREAM_ID={$ARG_DREAM_ID}"
 

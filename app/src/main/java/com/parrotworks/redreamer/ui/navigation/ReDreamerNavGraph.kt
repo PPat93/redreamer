@@ -11,6 +11,7 @@ import com.parrotworks.redreamer.ui.bin.BinScreen
 import com.parrotworks.redreamer.ui.detail.DreamDetailScreen
 import com.parrotworks.redreamer.ui.editor.DreamEditorScreen
 import com.parrotworks.redreamer.ui.home.HomeScreen
+import com.parrotworks.redreamer.ui.tags.TagManagementScreen
 
 @Composable
 fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()) {
@@ -20,11 +21,16 @@ fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()
                 onDreamClick = { id -> navController.navigate(Destinations.dreamDetail(id)) },
                 onAddDreamClick = { navController.navigate(Destinations.dreamEditorNew()) },
                 onBinClick = { navController.navigate(Destinations.BIN) },
+                onManageTagsClick = { navController.navigate(Destinations.TAG_MANAGEMENT) },
             )
         }
 
         composable(Destinations.BIN) {
             BinScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Destinations.TAG_MANAGEMENT) {
+            TagManagementScreen(onBack = { navController.popBackStack() })
         }
 
         composable(
@@ -55,6 +61,7 @@ fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()
             DreamEditorScreen(
                 onSaved = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() },
+                onManageTagsClick = { navController.navigate(Destinations.TAG_MANAGEMENT) },
             )
         }
     }

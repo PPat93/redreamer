@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AssistChip
@@ -54,10 +55,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.data.Mood
+import com.parrotworks.redreamer.ui.components.DreamDatePickerDialog
 import com.parrotworks.redreamer.ui.components.displayName
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
@@ -67,6 +67,7 @@ private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy")
 fun DreamEditorScreen(
     onSaved: () -> Unit,
     onCancel: () -> Unit,
+    onManageTagsClick: () -> Unit,
     viewModel: DreamEditorViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -208,6 +209,7 @@ fun DreamEditorScreen(
                 onTagInputChange = viewModel::onTagInputChange,
                 onAddTag = viewModel::onAddTag,
                 onRemoveTag = viewModel::onRemoveTag,
+                onManageTagsClick = onManageTagsClick,
             )
 
             OutlinedTextField(
@@ -235,29 +237,11 @@ private fun DreamDatePickerField(date: LocalDate, onDateChange: (LocalDate) -> U
     }
 
     if (showPicker) {
-        val state = androidx.compose.material3.rememberDatePickerState(
-            initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
-        androidx.compose.material3.DatePickerDialog(
+        DreamDatePickerDialog(
+            initialDate = date,
             onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        onDateChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
-                    }
-                    showPicker = false
-                }) {
-                    Text(stringResource(R.string.action_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            },
-        ) {
-            androidx.compose.material3.DatePicker(state = state)
-        }
+            onDateSelected = onDateChange,
+        )
     }
 }
 
@@ -269,9 +253,23 @@ private fun TagEditor(
     onTagInputChange: (String) -> Unit,
     onAddTag: (String) -> Unit,
     onRemoveTag: (String) -> Unit,
+    onManageTagsClick: () -> Unit,
 ) {
     Column {
-        Text(stringResource(R.string.dream_field_tags), style = MaterialTheme.typography.labelLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.dream_field_tags),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onManageTagsClick, modifier = Modifier.size(24.dp)) {
+                Icon(
+                    Icons.AutoMirrored.Filled.Label,
+                    contentDescription = stringResource(R.string.tag_management_title),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
         Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
