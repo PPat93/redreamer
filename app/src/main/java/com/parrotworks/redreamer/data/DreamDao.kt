@@ -29,6 +29,9 @@ interface DreamDao {
     @Query("SELECT * FROM dreams WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun observeBinnedDreams(): Flow<List<DreamWithTags>>
 
+    @Query("SELECT COUNT(*) FROM dreams WHERE deletedAt IS NOT NULL")
+    fun observeBinnedCount(): Flow<Int>
+
     @Query("UPDATE dreams SET deletedAt = :deletedAt WHERE id = :id")
     suspend fun softDelete(id: Long, deletedAt: Instant)
 
@@ -43,6 +46,9 @@ interface DreamDao {
 
     @Query("DELETE FROM dreams WHERE deletedAt IS NOT NULL AND deletedAt < :cutoff")
     suspend fun purgeDeletedBefore(cutoff: Instant)
+
+    @Query("DELETE FROM dreams WHERE deletedAt IS NOT NULL")
+    suspend fun deleteAllBinned()
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertCrossRefs(crossRefs: List<DreamTagCrossRef>)

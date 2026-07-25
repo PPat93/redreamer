@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.parrotworks.redreamer.ui.bin.BinScreen
 import com.parrotworks.redreamer.ui.detail.DreamDetailScreen
 import com.parrotworks.redreamer.ui.editor.DreamEditorScreen
 import com.parrotworks.redreamer.ui.home.HomeScreen
@@ -18,7 +19,12 @@ fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()
             HomeScreen(
                 onDreamClick = { id -> navController.navigate(Destinations.dreamDetail(id)) },
                 onAddDreamClick = { navController.navigate(Destinations.dreamEditorNew()) },
+                onBinClick = { navController.navigate(Destinations.BIN) },
             )
+        }
+
+        composable(Destinations.BIN) {
+            BinScreen(onBack = { navController.popBackStack() })
         }
 
         composable(
