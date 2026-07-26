@@ -27,6 +27,9 @@ interface TagDao {
     )
     fun observeTagsWithUsage(): Flow<List<TagWithUsage>>
 
+    @Query("SELECT * FROM tags ORDER BY name COLLATE NOCASE ASC")
+    suspend fun getAllTagsOnce(): List<Tag>
+
     @Query("SELECT * FROM tags WHERE name = :name COLLATE NOCASE LIMIT 1")
     suspend fun findByName(name: String): Tag?
 

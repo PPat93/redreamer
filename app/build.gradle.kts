@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
@@ -77,4 +78,10 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.biometric)
+    // BiometricPrompt needs a FragmentActivity host; pin a current fragment rather than
+    // inheriting the old one biometric:1.1.0 pulls in transitively.
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.junit)
 }

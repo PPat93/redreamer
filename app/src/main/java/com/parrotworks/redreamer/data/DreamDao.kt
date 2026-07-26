@@ -29,6 +29,11 @@ interface DreamDao {
     @Query("SELECT * FROM dreams WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC")
     fun observeBinnedDreams(): Flow<List<DreamWithTags>>
 
+    /** One-shot read for export; binned dreams are intentionally excluded from backups. */
+    @Transaction
+    @Query("SELECT * FROM dreams WHERE deletedAt IS NULL ORDER BY dreamDate DESC, createdAt DESC")
+    suspend fun getLiveDreamsOnce(): List<DreamWithTags>
+
     @Query("SELECT COUNT(*) FROM dreams WHERE deletedAt IS NOT NULL")
     fun observeBinnedCount(): Flow<Int>
 
