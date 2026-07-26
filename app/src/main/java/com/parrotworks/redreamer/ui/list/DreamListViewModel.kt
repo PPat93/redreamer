@@ -60,7 +60,7 @@ class DreamListViewModel @Inject constructor(
         _searchQuery,
     ) { allDreams, searchOrAllDreams, filters, query ->
         DreamListUiState(
-            dreams = applyFilters(searchOrAllDreams, filters),
+            dreams = searchOrAllDreams.filteredBy(filters),
             hasAnyDreams = allDreams.isNotEmpty(),
             isSearchActive = query.isNotBlank(),
         )
@@ -68,27 +68,6 @@ class DreamListViewModel @Inject constructor(
 
     private val _selectedIds = MutableStateFlow<Set<Long>>(emptySet())
     val selectedIds: StateFlow<Set<Long>> = _selectedIds.asStateFlow()
-
-    init {
-        // Bin entries older than 30 days are purged for good; this is the one
-        // launch-time check since the app has no background scheduler yet.
-        viewModelScope.launch {
-            repository.purgeExpiredFromBin()
-        }
-    }
-
-    private fun applyFilters(dreams: List<DreamWithTags>, filters: DreamListFilters): List<DreamWithTags> {
-        if (filters.activeCount == 0) return dreams
-        return dreams.filter { dreamWithTags ->
-            val dream = dreamWithTags.dream
-            (filters.startDate == null || !dream.dreamDate.isBefore(filters.startDate)) &&
-                (filters.endDate == null || !dream.dreamDate.isAfter(filters.endDate)) &&
-                (filters.tagNames.isEmpty() || dreamWithTags.tags.any { it.name in filters.tagNames }) &&
-                (!filters.lucidOnly || dream.isLucid) &&
-                (!filters.nightmareOnly || dream.isNightmare) &&
-                (!filters.recurringOnly || dream.isRecurring)
-        }
-    }
 
     fun setStartDate(date: LocalDate?) {
         _filters.update { it.copy(startDate = date) }

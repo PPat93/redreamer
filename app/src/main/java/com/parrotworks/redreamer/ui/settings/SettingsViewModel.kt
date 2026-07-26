@@ -1,0 +1,80 @@
+package com.parrotworks.redreamer.ui.settings
+
+import android.net.Uri
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.parrotworks.redreamer.data.backup.BackupManager
+import com.parrotworks.redreamer.data.prefs.AppPreferences
+import com.parrotworks.redreamer.repository.DreamRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/** One-shot outcome of an export/import, surfaced as a snackbar then cleared. */
+sealed interface BackupResult {
+    data class Exported(val dreamCount: Int) : BackupResult
+    data class Imported(val dreamCount: Int) : BackupResult
+    data object Failed : BackupResult
+}
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val repository: DreamRepository,
+    private val backupManager: BackupManager,
+    private val preferences: AppPreferences,
+) : ViewModel() {
+
+    val appLockEnabled: StateFlow<Boolean> = preferences.appLockEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val autoBackupEnabled: StateFlow<Boolean> = preferences.autoBackupEnabled
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    private val _isBusy = MutableStateFlow(false)
+    val isBusy: StateFlow<Boolean> = _isBusy.asStateFlow()
+
+    private val _result = MutableStateFlow<BackupResult?>(null)
+    val result: StateFlow<BackupResult?> = _result.asStateFlow()
+
+    fun suggestedExportFileName(): String = "redreamer-export.json"
+
+    fun exportTo(uri: Uri) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            _result.value = runCatching {
+                val snapshot = repository.exportSnapshot()
+                backupManager.writeToUri(uri, snapshot)
+                BackupResult.Exported(snapshot.dreams.size)
+            }.getOrElse { BackupResult.Failed }
+            _isBusy.value = false
+        }
+    }
+
+    fun importFrom(uri: Uri) {
+        viewModelScope.launch {
+            _isBusy.value = true
+            _result.value = runCatching {
+                val backup = backupManager.readFromUri(uri)
+                BackupResult.Imported(repository.importBackup(backup))
+            }.getOrElse { BackupResult.Failed }
+            _isBusy.value = false
+        }
+    }
+
+    fun setAppLockEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferences.setAppLockEnabled(enabled) }
+    }
+
+    fun setAutoBackupEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferences.setAutoBackupEnabled(enabled) }
+    }
+
+    fun consumeResult() {
+        _result.value = null
+    }
+}

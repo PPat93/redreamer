@@ -10,9 +10,10 @@ import com.parrotworks.redreamer.data.Mood
 import com.parrotworks.redreamer.data.Tag
 import com.parrotworks.redreamer.data.TagDao
 import com.parrotworks.redreamer.data.TagWithUsage
+import com.parrotworks.redreamer.data.backup.BackupDream
+import com.parrotworks.redreamer.data.backup.BackupFile
 import java.time.Instant
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -66,85 +67,78 @@ class DreamRepository @Inject constructor(
         }
     }
 
-    /** Searches title/content/notes of live dreams only. Terms are quoted-prefix-matched and ANDed together. */
-    fun searchDreams(rawQuery: String): Flow<List<DreamWithTags>> {
-        val ftsQuery = buildFtsQuery(rawQuery) ?: return flowOf(emptyList())
-        return dreamDao.searchDreams(ftsQuery)
-    }
-
-    private fun buildFtsQuery(rawQuery: String): String? {
-        val terms = rawQuery.trim()
-            .split(Regex("\\s+"))
-            .map { it.replace("\"", "").trim() }
-            .filter { it.isNotEmpty() }
-        if (terms.isEmpty()) return null
-        return terms.joinToString(" ") { "\"$it\"*" }
-    }
-
-    /** All figures are derived from live (non-binned) dreams only, recomputed reactively as they change. */
-    fun observeStats(): Flow<DreamStats> = dreamDao.observeLiveDreams().map { dreams -> computeStats(dreams) }
-
-    private fun computeStats(dreams: List<DreamWithTags>): DreamStats {
-        val total = dreams.size
-        if (total == 0) return DreamStats.EMPTY
-
-        val lucidCount = dreams.count { it.dream.isLucid }
-        val nightmareCount = dreams.count { it.dream.isNightmare }
-        val recurringCount = dreams.count { it.dream.isRecurring }
-        val averageClarity = dreams.map { it.dream.clarity }.average()
-
-        val moodCounts = dreams.flatMap { it.dream.moods }
-            .groupingBy { it }
-            .eachCount()
-
-        val topTags = dreams.flatMap { it.tags }
-            .groupingBy { it.name }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
-            .take(TOP_TAGS_LIMIT)
-            .map { TagCount(it.key, it.value) }
-
-        val currentMonth = YearMonth.now()
-        val dreamsPerMonth = (MONTHS_BACK - 1 downTo 0).map { offset ->
-            val month = currentMonth.minusMonths(offset.toLong())
-            val count = dreams.count { YearMonth.from(it.dream.dreamDate) == month }
-            MonthCount(month, count)
-        }
-
-        return DreamStats(
-            totalDreams = total,
-            lucidPercent = lucidCount * 100 / total,
-            nightmarePercent = nightmareCount * 100 / total,
-            recurringPercent = recurringCount * 100 / total,
-            averageClarity = averageClarity,
-            moodCounts = moodCounts,
-            topTags = topTags,
-            dreamsPerMonth = dreamsPerMonth,
-            currentStreakDays = computeStreak(dreams.map { it.dream.dreamDate }),
+    /** Snapshot of every live dream plus all known tag names, ready to serialize. */
+    suspend fun exportSnapshot(): BackupFile {
+        val dreams = dreamDao.getLiveDreamsOnce()
+        val allTags = tagDao.getAllTagsOnce()
+        return BackupFile(
+            exportedAt = Instant.now().toString(),
+            tags = allTags.map { it.name },
+            dreams = dreams.map { it.toBackupDream() },
         )
     }
 
-    /** Consecutive days with a logged dream, ending today or yesterday — otherwise the streak is broken. */
-    private fun computeStreak(dreamDates: List<LocalDate>): Int {
-        if (dreamDates.isEmpty()) return 0
-        val distinctDaysDesc = dreamDates.distinct().sortedDescending()
-        val today = LocalDate.now()
-        if (ChronoUnit.DAYS.between(distinctDaysDesc.first(), today) > 1) return 0
+    /**
+     * Adds every dream from [backup] as a new entry, preserving its original dates and re-linking
+     * tags by name. Existing dreams are left untouched — importing the same file twice therefore
+     * duplicates its dreams rather than silently overwriting anything.
+     *
+     * @return how many dreams were imported.
+     */
+    suspend fun importBackup(backup: BackupFile): Int {
+        backup.tags.forEach { createTag(it) }
 
-        var streak = 1
-        var cursor = distinctDaysDesc.first()
-        for (i in 1 until distinctDaysDesc.size) {
-            val day = distinctDaysDesc[i]
-            if (ChronoUnit.DAYS.between(day, cursor) == 1L) {
-                streak++
-                cursor = day
-            } else {
-                break
-            }
+        var imported = 0
+        backup.dreams.forEach { entry ->
+            val dreamDate = runCatching { LocalDate.parse(entry.dreamDate) }.getOrNull() ?: return@forEach
+            val createdAt = runCatching { Instant.parse(entry.createdAt) }.getOrNull() ?: Instant.now()
+            val moods = entry.moods.mapNotNull { name -> runCatching { Mood.valueOf(name) }.getOrNull() }.toSet()
+
+            saveDream(
+                id = null,
+                title = entry.title,
+                content = entry.content,
+                notes = entry.notes,
+                dreamDate = dreamDate,
+                isLucid = entry.isLucid,
+                lucidity = entry.lucidity,
+                clarity = entry.clarity,
+                isNightmare = entry.isNightmare,
+                isRecurring = entry.isRecurring,
+                moods = moods,
+                tagNames = entry.tags,
+                existingCreatedAt = createdAt,
+            )
+            imported++
         }
-        return streak
+        return imported
     }
+
+    private fun DreamWithTags.toBackupDream() = BackupDream(
+        title = dream.title,
+        content = dream.content,
+        notes = dream.notes,
+        dreamDate = dream.dreamDate.toString(),
+        createdAt = dream.createdAt.toString(),
+        updatedAt = dream.updatedAt.toString(),
+        isLucid = dream.isLucid,
+        lucidity = dream.lucidity,
+        clarity = dream.clarity,
+        isNightmare = dream.isNightmare,
+        isRecurring = dream.isRecurring,
+        moods = dream.moods.map { it.name },
+        tags = tags.map { it.name },
+    )
+
+    /** Searches title/content/notes of live dreams only. Terms are quoted-prefix-matched and ANDed together. */
+    fun searchDreams(rawQuery: String): Flow<List<DreamWithTags>> {
+        val ftsQuery = FtsQueryBuilder.build(rawQuery) ?: return flowOf(emptyList())
+        return dreamDao.searchDreams(ftsQuery)
+    }
+
+    /** All figures are derived from live (non-binned) dreams only, recomputed reactively as they change. */
+    fun observeStats(): Flow<DreamStats> =
+        dreamDao.observeLiveDreams().map { dreams -> DreamStatsCalculator.calculate(dreams) }
 
     /** Creates a dream when [id] is null, otherwise updates it in place without touching [Dream.createdAt]. */
     suspend fun saveDream(
@@ -247,7 +241,5 @@ class DreamRepository @Inject constructor(
 
     companion object {
         const val BIN_RETENTION_DAYS = 30L
-        private const val TOP_TAGS_LIMIT = 8
-        private const val MONTHS_BACK = 6
     }
 }

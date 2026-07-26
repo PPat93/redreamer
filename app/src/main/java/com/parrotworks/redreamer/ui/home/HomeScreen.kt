@@ -20,6 +20,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -27,6 +29,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,6 +43,7 @@ import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.ui.list.DreamListContent
 import com.parrotworks.redreamer.ui.settings.SettingsScreen
 import com.parrotworks.redreamer.ui.stats.StatsScreen
+import kotlinx.coroutines.launch
 
 private const val TAB_DREAMS = 0
 private const val TAB_STATS = 1
@@ -53,8 +58,11 @@ fun HomeScreen(
     onManageTagsClick: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(TAB_DREAMS) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column {
                 TopAppBar(
@@ -99,7 +107,9 @@ fun HomeScreen(
             when (selectedTab) {
                 TAB_DREAMS -> DreamListContent(onDreamClick = onDreamClick)
                 TAB_STATS -> StatsScreen()
-                else -> SettingsScreen()
+                else -> SettingsScreen(
+                    onShowMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+                )
             }
         }
     }
