@@ -94,6 +94,8 @@ fun DreamListContent(
 
         if (uiState.dreams.isEmpty()) {
             when {
+                // Nothing to say yet — showing an empty state here would flash on every launch.
+                !uiState.isLoaded -> Box(modifier = Modifier.fillMaxSize())
                 uiState.isSearchActive -> NoSearchResults(modifier = Modifier.fillMaxSize())
                 uiState.hasAnyDreams -> NoMatchingDreams(onClearFilters = viewModel::clearFilters, modifier = Modifier.fillMaxSize())
                 else -> EmptyDreamList(modifier = Modifier.fillMaxSize())

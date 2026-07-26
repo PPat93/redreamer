@@ -50,5 +50,14 @@ class BackupManager @Inject constructor(
     companion object {
         const val MAX_LOCAL_BACKUPS = 5
         const val EXPORT_MIME_TYPE = "application/json"
+
+        /**
+         * Deliberately unrestricted. Storage providers are wildly inconsistent about the MIME type
+         * they report for a .json file — "application/json", "text/plain" and
+         * "application/octet-stream" are all common — and anything not matching the filter is shown
+         * greyed out and unselectable. Accepting everything and validating the contents after
+         * reading is the only way the user can reliably pick their own export back.
+         */
+        val IMPORT_MIME_TYPES = arrayOf("*/*")
     }
 }

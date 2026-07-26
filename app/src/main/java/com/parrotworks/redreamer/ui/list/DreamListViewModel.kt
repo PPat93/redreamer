@@ -28,6 +28,8 @@ data class DreamListUiState(
      * empty journal from a search or filter that just happens to match nothing. */
     val hasAnyDreams: Boolean = false,
     val isSearchActive: Boolean = false,
+    /** False until the first database emission, so no empty state is shown before we know anything. */
+    val isLoaded: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -49,7 +51,9 @@ class DreamListViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val searchResultsOrAll: Flow<List<DreamWithTags>> = _searchQuery
-        .debounce(SEARCH_DEBOUNCE_MS)
+        // Debounce only actual typing. A flat delay would also hold back the initial empty query,
+        // leaving the list briefly showing its "no dreams yet" state on every launch.
+        .debounce { query -> if (query.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
         .flatMapLatest { query ->
             if (query.isBlank()) repository.observeLiveDreams() else repository.searchDreams(query)
         }
@@ -64,6 +68,7 @@ class DreamListViewModel @Inject constructor(
             dreams = searchOrAllDreams.filteredBy(filters),
             hasAnyDreams = allDreams.isNotEmpty(),
             isSearchActive = query.isNotBlank(),
+            isLoaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DreamListUiState())
 

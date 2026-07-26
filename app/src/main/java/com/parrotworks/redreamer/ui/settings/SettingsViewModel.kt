@@ -7,6 +7,7 @@ import com.parrotworks.redreamer.data.backup.BackupManager
 import com.parrotworks.redreamer.data.prefs.AppPreferences
 import com.parrotworks.redreamer.repository.DreamRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,7 +42,8 @@ class SettingsViewModel @Inject constructor(
     private val _result = MutableStateFlow<BackupResult?>(null)
     val result: StateFlow<BackupResult?> = _result.asStateFlow()
 
-    fun suggestedExportFileName(): String = "redreamer-export.json"
+    /** Dated so successive exports don't silently overwrite or pile up as "file (1).json". */
+    fun suggestedExportFileName(): String = "redreamer-export-${LocalDate.now()}.json"
 
     fun exportTo(uri: Uri) {
         viewModelScope.launch {

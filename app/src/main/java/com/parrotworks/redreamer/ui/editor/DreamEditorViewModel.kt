@@ -7,6 +7,7 @@ import com.parrotworks.redreamer.data.Mood
 import com.parrotworks.redreamer.repository.DreamRepository
 import com.parrotworks.redreamer.ui.navigation.Destinations
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.Serializable
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
@@ -17,8 +18,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 
+/**
+ * Serializable so the in-progress draft can be stashed in [SavedStateHandle] and survive the
+ * process being killed while the user is away from the app.
+ */
 data class DreamEditorUiState(
     val title: String = "",
     val content: String = "",
@@ -35,17 +41,17 @@ data class DreamEditorUiState(
     val allTagNames: List<String> = emptyList(),
     val isReady: Boolean = false,
     val isEditingExisting: Boolean = false,
-)
+) : Serializable
 
 /**
- * Debounced autosave means there is no real "cancel": once the user has typed
- * a title or dream text, it is persisted to Room ~800ms after they stop
- * typing, well within the window where dream recall is normally lost.
+ * Losing a half-written dream is the worst failure this app can have, so edits are protected twice:
+ * a debounced write to the database ~800ms after typing stops, and an immediate mirror of the whole
+ * draft into [SavedStateHandle] so even a process death mid-sentence comes back intact.
  */
 @HiltViewModel
 class DreamEditorViewModel @Inject constructor(
     private val repository: DreamRepository,
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val existingDreamId: Long? =
@@ -65,32 +71,45 @@ class DreamEditorViewModel @Inject constructor(
             }
         }
 
+        val restoredDraft = savedStateHandle.get<DreamEditorUiState>(KEY_DRAFT)
         val id = existingDreamId
-        if (id == null) {
-            _uiState.update { it.copy(isReady = true) }
-        } else {
-            _uiState.update { it.copy(isEditingExisting = true) }
-            viewModelScope.launch {
-                val existing = repository.observeDream(id).first()
-                if (existing == null) {
-                    _uiState.update { it.copy(isReady = true) }
-                } else {
-                    createdAt = existing.dream.createdAt
-                    _uiState.update {
-                        it.copy(
-                            title = existing.dream.title,
-                            content = existing.dream.content,
-                            notes = existing.dream.notes,
-                            dreamDate = existing.dream.dreamDate,
-                            isLucid = existing.dream.isLucid,
-                            lucidity = existing.dream.lucidity ?: 5,
-                            clarity = existing.dream.clarity,
-                            isNightmare = existing.dream.isNightmare,
-                            isRecurring = existing.dream.isRecurring,
-                            moods = existing.dream.moods,
-                            tags = existing.tags.map { tag -> tag.name },
-                            isReady = true,
-                        )
+
+        when {
+            // A draft survived process death — it is newer than whatever is in the database.
+            restoredDraft != null -> {
+                dreamId = savedStateHandle.get<Long>(KEY_DRAFT_DREAM_ID)?.takeIf { it >= 0 }
+                createdAt = savedStateHandle.get<Long>(KEY_DRAFT_CREATED_AT)
+                    ?.takeIf { it > 0 }
+                    ?.let(Instant::ofEpochMilli)
+                _uiState.value = restoredDraft.copy(isReady = true)
+            }
+
+            id == null -> _uiState.update { it.copy(isReady = true) }
+
+            else -> {
+                _uiState.update { it.copy(isEditingExisting = true) }
+                viewModelScope.launch {
+                    val existing = repository.observeDream(id).first()
+                    if (existing == null) {
+                        _uiState.update { it.copy(isReady = true) }
+                    } else {
+                        createdAt = existing.dream.createdAt
+                        _uiState.update {
+                            it.copy(
+                                title = existing.dream.title,
+                                content = existing.dream.content,
+                                notes = existing.dream.notes,
+                                dreamDate = existing.dream.dreamDate,
+                                isLucid = existing.dream.isLucid,
+                                lucidity = existing.dream.lucidity ?: 5,
+                                clarity = existing.dream.clarity,
+                                isNightmare = existing.dream.isNightmare,
+                                isRecurring = existing.dream.isRecurring,
+                                moods = existing.dream.moods,
+                                tags = existing.tags.map { tag -> tag.name },
+                                isReady = true,
+                            )
+                        }
                     }
                 }
             }
@@ -112,8 +131,9 @@ class DreamEditorViewModel @Inject constructor(
         it.copy(moods = moods)
     }
 
+    /** Half-typed tag text is worth keeping too, but it alone doesn't warrant a database write. */
     fun onTagInputChange(value: String) {
-        _uiState.update { it.copy(tagInput = value) }
+        stashDraft(_uiState.updateAndGet { it.copy(tagInput = value) })
     }
 
     fun onAddTag(name: String) {
@@ -137,12 +157,13 @@ class DreamEditorViewModel @Inject constructor(
         autosaveJob?.cancel()
         viewModelScope.launch {
             persist()
+            clearDraft()
             onComplete()
         }
     }
 
     private fun updateState(transform: (DreamEditorUiState) -> DreamEditorUiState) {
-        _uiState.update(transform)
+        stashDraft(_uiState.updateAndGet(transform))
         scheduleAutosave()
     }
 
@@ -158,7 +179,11 @@ class DreamEditorViewModel @Inject constructor(
         val state = _uiState.value
         if (state.title.isBlank() && state.content.isBlank()) return
 
-        val savedId = repository.saveDream(
+        // Pin the creation time on first save; otherwise every later autosave of a new dream would
+        // push createdAt forward, which is meant to be immutable and is the list's tiebreak sort key.
+        val createdAtToUse = createdAt ?: Instant.now().also { createdAt = it }
+
+        dreamId = repository.saveDream(
             id = dreamId,
             title = state.title,
             content = state.content,
@@ -171,12 +196,28 @@ class DreamEditorViewModel @Inject constructor(
             isRecurring = state.isRecurring,
             moods = state.moods,
             tagNames = state.tags,
-            existingCreatedAt = createdAt,
+            existingCreatedAt = createdAtToUse,
         )
-        dreamId = savedId
+        stashDraft(state)
+    }
+
+    private fun stashDraft(state: DreamEditorUiState) {
+        savedStateHandle[KEY_DRAFT] = state
+        savedStateHandle[KEY_DRAFT_DREAM_ID] = dreamId ?: -1L
+        savedStateHandle[KEY_DRAFT_CREATED_AT] = createdAt?.toEpochMilli() ?: -1L
+    }
+
+    /** Once the user has deliberately saved, the stashed draft would only cause a stale restore. */
+    private fun clearDraft() {
+        savedStateHandle.remove<DreamEditorUiState>(KEY_DRAFT)
+        savedStateHandle.remove<Long>(KEY_DRAFT_DREAM_ID)
+        savedStateHandle.remove<Long>(KEY_DRAFT_CREATED_AT)
     }
 
     private companion object {
         const val AUTOSAVE_DEBOUNCE_MS = 800L
+        const val KEY_DRAFT = "editor_draft"
+        const val KEY_DRAFT_DREAM_ID = "editor_draft_dream_id"
+        const val KEY_DRAFT_CREATED_AT = "editor_draft_created_at"
     }
 }

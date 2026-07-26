@@ -95,7 +95,7 @@ fun SettingsScreen(
             leadingContent = { Icon(Icons.Filled.FileUpload, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = !isBusy) { importLauncher.launch(arrayOf(BackupManager.EXPORT_MIME_TYPE)) },
+                .clickable(enabled = !isBusy) { importLauncher.launch(BackupManager.IMPORT_MIME_TYPES) },
         )
 
         ListItem(
