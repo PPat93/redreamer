@@ -106,6 +106,7 @@ fun DreamDetailScreen(
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, dreamWithTagsValue.toFullText())
                     }
+                    viewModel.onShareSheetOpened()
                     context.startActivity(Intent.createChooser(sendIntent, null))
                 },
             )

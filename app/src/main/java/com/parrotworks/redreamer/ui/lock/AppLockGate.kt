@@ -58,13 +58,15 @@ fun AppLockGate(
     val lifecycleOwner = LocalLifecycleOwner.current
     val lockActive = lockEnabled == true
 
-    // Re-lock when the app actually leaves the foreground — but not while the OS auth UI is up,
-    // since the device-credential path launches the keyguard as its own activity and would
-    // otherwise immediately undo a successful unlock.
+    // Re-lock when the user actually leaves — but not for system UI the app opened itself. A file
+    // picker, share sheet or the device-credential keyguard all stop our activity while the user
+    // never really left, and locking behind them would be both jarring and pointless.
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && !viewModel.isAuthenticating) {
-                viewModel.relock()
+            when (event) {
+                Lifecycle.Event.ON_STOP -> if (!viewModel.isInSystemFlow) viewModel.relock()
+                Lifecycle.Event.ON_START -> viewModel.onReturnedToForeground()
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -148,19 +150,19 @@ private fun requestUnlock(
     strings: UnlockStrings,
 ) {
     val host = activity ?: return
-    viewModel.isAuthenticating = true
+    viewModel.beginSystemFlow()
 
     val prompt = BiometricPrompt(
         host,
         ContextCompat.getMainExecutor(host),
         object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                viewModel.isAuthenticating = false
+                viewModel.endSystemFlow()
                 viewModel.onUnlocked()
             }
 
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                viewModel.isAuthenticating = false
+                viewModel.endSystemFlow()
             }
         },
     )

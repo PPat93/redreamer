@@ -50,13 +50,20 @@ fun SettingsScreen(
 
     val canUseAppLock = remember { context.canUseAppLock() }
 
+    // The picker result also arrives when the user cancels, so the excursion is always closed out.
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(BackupManager.EXPORT_MIME_TYPE),
-    ) { uri -> uri?.let(viewModel::exportTo) }
+    ) { uri ->
+        viewModel.onSystemPickerClosed()
+        uri?.let(viewModel::exportTo)
+    }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
-    ) { uri -> uri?.let(viewModel::importFrom) }
+    ) { uri ->
+        viewModel.onSystemPickerClosed()
+        uri?.let(viewModel::importFrom)
+    }
 
     LaunchedEffect(result) {
         val current = result ?: return@LaunchedEffect
@@ -86,7 +93,10 @@ fun SettingsScreen(
             leadingContent = { Icon(Icons.Filled.FileDownload, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = !isBusy) { exportLauncher.launch(viewModel.suggestedExportFileName()) },
+                .clickable(enabled = !isBusy) {
+                    viewModel.onSystemPickerOpened()
+                    exportLauncher.launch(viewModel.suggestedExportFileName())
+                },
         )
 
         ListItem(
@@ -95,7 +105,10 @@ fun SettingsScreen(
             leadingContent = { Icon(Icons.Filled.FileUpload, contentDescription = null) },
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(enabled = !isBusy) { importLauncher.launch(BackupManager.IMPORT_MIME_TYPES) },
+                .clickable(enabled = !isBusy) {
+                    viewModel.onSystemPickerOpened()
+                    importLauncher.launch(BackupManager.IMPORT_MIME_TYPES)
+                },
         )
 
         ListItem(

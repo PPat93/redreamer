@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.parrotworks.redreamer.data.backup.BackupManager
 import com.parrotworks.redreamer.data.prefs.AppPreferences
 import com.parrotworks.redreamer.repository.DreamRepository
+import com.parrotworks.redreamer.ui.lock.AppLockController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import javax.inject.Inject
@@ -28,7 +29,13 @@ class SettingsViewModel @Inject constructor(
     private val repository: DreamRepository,
     private val backupManager: BackupManager,
     private val preferences: AppPreferences,
+    private val appLockController: AppLockController,
 ) : ViewModel() {
+
+    /** The file picker is a separate activity; without this the app would re-lock behind it. */
+    fun onSystemPickerOpened() = appLockController.beginSystemFlow()
+
+    fun onSystemPickerClosed() = appLockController.endSystemFlow()
 
     val appLockEnabled: StateFlow<Boolean> = preferences.appLockEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
