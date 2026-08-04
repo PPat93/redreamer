@@ -31,6 +31,8 @@
     <string name="action_copy">Copy dream</string>
     <string name="action_copy_text_only">Copy text only</string>
     <string name="dream_deleted_to_bin">Moved to bin</string>
+    <string name="dream_copied">Dream copied</string>
+    <string name="dream_text_copied">Dream text copied</string>
 
     <string name="dream_detail_clarity_value">Clarity: %1$d/10</string>
     <string name="dream_detail_lucidity_value">Lucid dream — lucidity %1$d/10</string>

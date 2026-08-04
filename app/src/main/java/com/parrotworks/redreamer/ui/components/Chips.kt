@@ -1,25 +1,29 @@
 package com.parrotworks.redreamer.ui.components
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 import com.parrotworks.redreamer.data.Mood
 
-/** A static, non-interactive label chip — used for read-only display of moods and tags in cards. */
+/** Static, non-interactive label chip — read-only display of moods and tags in cards. */
 @Composable
-fun DreamChip(
+private fun LabelChip(
     text: String,
+    shape: Shape,
+    containerColor: Color,
+    contentColor: Color,
     modifier: Modifier = Modifier,
-    containerColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.secondaryContainer,
-    contentColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSecondaryContainer,
 ) {
     Surface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.small,
+        shape = shape,
         color = containerColor,
         contentColor = contentColor,
     ) {
@@ -31,9 +35,31 @@ fun DreamChip(
     }
 }
 
+/**
+ * Tags read as pills with a leading `#`. Shape and prefix differ from [MoodChip], not just colour,
+ * so the two stay distinguishable without relying on colour vision.
+ */
+@Composable
+fun TagChip(name: String, modifier: Modifier = Modifier) {
+    LabelChip(
+        text = "#$name",
+        shape = CircleShape,
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = modifier,
+    )
+}
+
+/** Moods are square-ish and use the tertiary palette, visually opposite [TagChip]. */
 @Composable
 fun MoodChip(mood: Mood, modifier: Modifier = Modifier) {
-    DreamChip(text = mood.displayName(), modifier = modifier)
+    LabelChip(
+        text = mood.displayName(),
+        shape = MaterialTheme.shapes.small,
+        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        modifier = modifier,
+    )
 }
 
 fun Mood.displayName(): String = name.lowercase().replaceFirstChar { it.uppercase() }

@@ -3,6 +3,7 @@
 package com.parrotworks.redreamer.ui.detail
 
 import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -36,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,9 +53,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.data.Dream
 import com.parrotworks.redreamer.data.DreamWithTags
-import com.parrotworks.redreamer.ui.components.DreamChip
+import com.parrotworks.redreamer.ui.components.TagChip
 import com.parrotworks.redreamer.ui.components.MoodChip
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy")
 
@@ -66,8 +71,25 @@ fun DreamDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val copiedMessage = stringResource(R.string.dream_copied)
+    val textCopiedMessage = stringResource(R.string.dream_text_copied)
+
+    // Android 13+ shows its own clipboard confirmation, so a snackbar there would double up.
+    val confirmsCopyItself = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+    val announceCopy: (String) -> Unit = { message ->
+        if (!confirmsCopyItself) {
+            scope.launch {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.dream_detail_title)) },
@@ -99,13 +121,20 @@ fun DreamDetailScreen(
             DreamDetailContent(
                 dreamWithTags = dreamWithTagsValue,
                 modifier = Modifier.padding(paddingValues),
-                onCopyFull = { clipboardManager.setText(AnnotatedString(dreamWithTagsValue.toFullText())) },
-                onCopyTextOnly = { clipboardManager.setText(AnnotatedString(dreamWithTagsValue.dream.content)) },
+                onCopyFull = {
+                    clipboardManager.setText(AnnotatedString(dreamWithTagsValue.toFullText()))
+                    announceCopy(copiedMessage)
+                },
+                onCopyTextOnly = {
+                    clipboardManager.setText(AnnotatedString(dreamWithTagsValue.dream.content))
+                    announceCopy(textCopiedMessage)
+                },
                 onShare = {
                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, dreamWithTagsValue.toFullText())
                     }
+                    viewModel.onShareSheetOpened()
                     context.startActivity(Intent.createChooser(sendIntent, null))
                 },
             )
@@ -164,7 +193,7 @@ private fun DreamDetailContent(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 dream.moods.forEach { mood -> MoodChip(mood) }
-                dreamWithTags.tags.forEach { tag -> DreamChip(text = tag.name) }
+                dreamWithTags.tags.forEach { tag -> TagChip(name = tag.name) }
             }
         }
 

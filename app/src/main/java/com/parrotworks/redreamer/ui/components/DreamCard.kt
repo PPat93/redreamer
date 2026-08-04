@@ -108,7 +108,7 @@ fun DreamCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     dream.moods.forEach { mood -> MoodChip(mood) }
-                    dreamWithTags.tags.forEach { tag -> DreamChip(text = tag.name) }
+                    dreamWithTags.tags.forEach { tag -> TagChip(name = tag.name) }
                 }
             }
         }

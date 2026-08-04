@@ -6,19 +6,18 @@ import com.parrotworks.redreamer.data.prefs.AppPreferences
 import com.parrotworks.redreamer.repository.MaintenanceRunner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Owns whether the journal is currently readable. Also the natural home for app-launch
+ * Thin lifecycle-facing wrapper over [AppLockController]. Also the natural home for app-launch
  * housekeeping, since it's created once when the activity starts.
  */
 @HiltViewModel
 class AppLockViewModel @Inject constructor(
+    private val controller: AppLockController,
     preferences: AppPreferences,
     maintenanceRunner: MaintenanceRunner,
 ) : ViewModel() {
@@ -27,25 +26,21 @@ class AppLockViewModel @Inject constructor(
     val lockEnabled: StateFlow<Boolean?> = preferences.appLockEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    private val _unlocked = MutableStateFlow(false)
-    val unlocked: StateFlow<Boolean> = _unlocked.asStateFlow()
+    val unlocked: StateFlow<Boolean> = controller.unlocked
 
-    /**
-     * True while the OS authentication UI is showing. Survives here rather than in composition
-     * because the device-credential prompt is a separate activity, which tears the composable down.
-     */
-    var isAuthenticating: Boolean = false
+    val isInSystemFlow: Boolean get() = controller.isInSystemFlow
 
     init {
         viewModelScope.launch { maintenanceRunner.runStartupTasks() }
     }
 
-    fun onUnlocked() {
-        _unlocked.value = true
-    }
+    fun onUnlocked() = controller.unlock()
 
-    /** Called when the app leaves the foreground so it re-locks on return. */
-    fun relock() {
-        _unlocked.value = false
-    }
+    fun relock() = controller.relock()
+
+    fun beginSystemFlow() = controller.beginSystemFlow()
+
+    fun endSystemFlow() = controller.endSystemFlow()
+
+    fun onReturnedToForeground() = controller.onReturnedToForeground()
 }

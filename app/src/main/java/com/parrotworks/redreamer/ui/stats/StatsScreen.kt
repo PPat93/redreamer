@@ -36,7 +36,7 @@ import com.parrotworks.redreamer.data.Mood
 import com.parrotworks.redreamer.repository.DreamStats
 import com.parrotworks.redreamer.repository.MonthCount
 import com.parrotworks.redreamer.ui.components.ComingSoonContent
-import com.parrotworks.redreamer.ui.components.DreamChip
+import com.parrotworks.redreamer.ui.components.TagChip
 import com.parrotworks.redreamer.ui.components.displayName
 import java.time.format.TextStyle
 import java.util.Locale
@@ -108,7 +108,7 @@ fun StatsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     stats.topTags.forEach { tagCount ->
-                        DreamChip(text = "${tagCount.name} (${tagCount.count})")
+                        TagChip(name = "${tagCount.name} (${tagCount.count})")
                     }
                 }
             }
