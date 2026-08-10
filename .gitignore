@@ -32,9 +32,11 @@ local.properties
 *.ipr
 *.iws
 
-# Keystore files — never commit signing keys
+# Keystore files and their passwords — never commit signing material.
+# Losing these means you can never ship an update to an already-installed app.
 *.jks
 *.keystore
+keystore.properties
 
 # Google services / Drive backup OAuth credentials (Phase 5)
 google-services.json
