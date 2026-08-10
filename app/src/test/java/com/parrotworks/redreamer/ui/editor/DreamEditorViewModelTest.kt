@@ -1,6 +1,7 @@
 package com.parrotworks.redreamer.ui.editor
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
@@ -10,8 +11,11 @@ import com.parrotworks.redreamer.data.Mood
 import com.parrotworks.redreamer.repository.DreamRepository
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -40,6 +44,7 @@ class DreamEditorViewModelTest {
 
     private lateinit var database: AppDatabase
     private lateinit var repository: DreamRepository
+    private lateinit var applicationScope: CoroutineScope
 
     @Before
     fun setUp() {
@@ -54,17 +59,27 @@ class DreamEditorViewModelTest {
             tagDao = database.tagDao(),
             dreamFtsDao = database.dreamFtsDao(),
         )
+        applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 
     @After
     fun tearDown() {
+        applicationScope.cancel()
         database.close()
     }
 
     private fun newEditor(savedState: SavedStateHandle = SavedStateHandle()) =
-        DreamEditorViewModel(repository, savedState)
+        DreamEditorViewModel(repository, applicationScope, savedState)
 
     private suspend fun liveDreams() = repository.observeLiveDreams().first()
+
+    /**
+     * Simulates the ViewModel being destroyed, which is what leaving the editor does. onCleared is
+     * protected, so reach it reflectively rather than widening the production API for a test.
+     */
+    private fun DreamEditorViewModel.callOnCleared() {
+        ViewModel::class.java.getDeclaredMethod("onCleared").apply { isAccessible = true }.invoke(this)
+    }
 
     /** saveNow launches into viewModelScope and returns immediately; wait for the write to land. */
     private suspend fun DreamEditorViewModel.saveAndWait() {
@@ -238,6 +253,31 @@ class DreamEditorViewModelTest {
         assertTrue(state.isRecurring)
         assertEquals(setOf(Mood.PEACEFUL), state.moods)
         assertEquals(listOf("flying"), state.tags)
+    }
+
+    @Test
+    fun leavingTheEditorBeforeTheAutosaveFiresStillKeepsTheText() = runTest {
+        val editor = newEditor()
+        editor.onTitleChange("Half written")
+        editor.onContentChange("I was flying and then")
+
+        // Pressing back destroys the ViewModel well inside the debounce window; the pending
+        // autosave dies with it, so the flush has to happen here or the text is gone for good.
+        editor.callOnCleared()
+
+        val saved = withContext(Dispatchers.Default) {
+            withTimeout(5_000) { repository.observeLiveDreams().first { it.isNotEmpty() } }
+        }
+        assertEquals("I was flying and then", saved.single().dream.content)
+    }
+
+    @Test
+    fun leavingAnUntouchedEditorWritesNothing() = runTest {
+        val editor = newEditor()
+
+        editor.callOnCleared()
+
+        assertTrue("opening and closing the editor must not create a dream", liveDreams().isEmpty())
     }
 
     @Test

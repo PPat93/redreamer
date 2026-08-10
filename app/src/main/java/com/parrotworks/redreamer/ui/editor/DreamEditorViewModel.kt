@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.parrotworks.redreamer.data.Mood
+import com.parrotworks.redreamer.di.ApplicationScope
 import com.parrotworks.redreamer.repository.DreamRepository
 import com.parrotworks.redreamer.ui.navigation.Destinations
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,6 +12,7 @@ import java.io.Serializable
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -55,6 +57,7 @@ data class DreamEditorUiState(
 @HiltViewModel
 class DreamEditorViewModel @Inject constructor(
     private val repository: DreamRepository,
+    @ApplicationScope private val applicationScope: CoroutineScope,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -65,6 +68,9 @@ class DreamEditorViewModel @Inject constructor(
     private var createdAt: Instant? = null
     private var autosaveJob: Job? = null
     private val persistMutex = Mutex()
+
+    /** Set on every edit, cleared once that edit reaches the database. */
+    private var hasUnsavedChanges = false
 
     private val _uiState = MutableStateFlow(DreamEditorUiState())
     val uiState: StateFlow<DreamEditorUiState> = _uiState.asStateFlow()
@@ -138,6 +144,7 @@ class DreamEditorViewModel @Inject constructor(
 
     /** Half-typed tag text is worth keeping too, but it alone doesn't warrant a database write. */
     fun onTagInputChange(value: String) {
+        hasUnsavedChanges = true
         stashDraft(_uiState.updateAndGet { it.copy(tagInput = value) })
     }
 
@@ -167,7 +174,20 @@ class DreamEditorViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Leaving the editor destroys this ViewModel, cancelling any debounced autosave still waiting.
+     * Without this, typing and immediately pressing back threw away everything written in the last
+     * [AUTOSAVE_DEBOUNCE_MS] — so the final flush runs on a scope that outlives the screen.
+     */
+    override fun onCleared() {
+        super.onCleared()
+        if (!hasUnsavedChanges) return
+        autosaveJob?.cancel()
+        applicationScope.launch { persist() }
+    }
+
     private fun updateState(transform: (DreamEditorUiState) -> DreamEditorUiState) {
+        hasUnsavedChanges = true
         stashDraft(_uiState.updateAndGet(transform))
         scheduleAutosave()
     }
@@ -188,7 +208,11 @@ class DreamEditorViewModel @Inject constructor(
     private suspend fun persist() = persistMutex.withLock {
         withContext(NonCancellable) {
             val state = _uiState.value
-            if (state.title.isBlank() && state.content.isBlank()) return@withContext
+            if (state.title.isBlank() && state.content.isBlank()) {
+                // Nothing worth writing; don't keep pretending there's pending work.
+                hasUnsavedChanges = false
+                return@withContext
+            }
 
             // Pin the creation time on first save; otherwise every later autosave of a new dream
             // would push createdAt forward, which is meant to be immutable and is the list's
@@ -211,6 +235,7 @@ class DreamEditorViewModel @Inject constructor(
                 existingCreatedAt = createdAtToUse,
             )
             stashDraft(state)
+            hasUnsavedChanges = false
         }
     }
 
