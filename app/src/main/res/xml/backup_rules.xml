@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-   Auto Backup config (Phase 5): includes the Room database in Android's
-   free backup-to-Drive-appdata mechanism. Nothing else needs backing up.
+   Android Auto Backup: what gets copied to the user's Drive quota and restored on reinstall.
+
+   The Room database gives an automatic, zero-effort restore. The JSON snapshots written by
+   BackupManager are included alongside it deliberately: they are plain files with no schema
+   version attached, so they stay importable even if the database itself ever restores into a
+   state this build can't open.
 -->
 <full-backup-content>
     <include domain="database" path="." />
+    <include domain="file" path="backups/" />
 </full-backup-content>
