@@ -69,7 +69,11 @@ fun SettingsScreen(
         val current = result ?: return@LaunchedEffect
         val message = when (current) {
             is BackupResult.Exported -> context.getString(R.string.backup_exported, current.dreamCount)
-            is BackupResult.Imported -> context.getString(R.string.backup_imported, current.dreamCount)
+            is BackupResult.Imported -> if (current.skippedCount > 0) {
+                context.getString(R.string.backup_imported_with_skips, current.dreamCount, current.skippedCount)
+            } else {
+                context.getString(R.string.backup_imported, current.dreamCount)
+            }
             BackupResult.Failed -> context.getString(R.string.backup_failed)
         }
         onShowMessage(message)

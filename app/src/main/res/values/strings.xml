@@ -59,6 +59,7 @@
 
     <string name="backup_exported">Exported %1$d dreams</string>
     <string name="backup_imported">Imported %1$d dreams</string>
+    <string name="backup_imported_with_skips">Imported %1$d dreams, %2$d could not be read</string>
     <string name="backup_failed">Something went wrong. Check the file and try again.</string>
 
     <string name="app_lock_prompt_title">Unlock ReDreamer</string>

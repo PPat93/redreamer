@@ -1,5 +1,7 @@
 package com.parrotworks.redreamer.repository
 
+import androidx.room.withTransaction
+import com.parrotworks.redreamer.data.AppDatabase
 import com.parrotworks.redreamer.data.Dream
 import com.parrotworks.redreamer.data.DreamDao
 import com.parrotworks.redreamer.data.DreamFts
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 class DreamRepository @Inject constructor(
+    private val database: AppDatabase,
     private val dreamDao: DreamDao,
     private val tagDao: TagDao,
     private val dreamFtsDao: DreamFtsDao,
@@ -83,14 +86,21 @@ class DreamRepository @Inject constructor(
      * tags by name. Existing dreams are left untouched — importing the same file twice therefore
      * duplicates its dreams rather than silently overwriting anything.
      *
-     * @return how many dreams were imported.
+     * Runs as one transaction, so a failure part-way leaves the journal exactly as it was rather
+     * than half-imported. Entries whose dream date can't be parsed are counted as skipped and
+     * reported, never dropped in silence.
      */
-    suspend fun importBackup(backup: BackupFile): Int {
+    suspend fun importBackup(backup: BackupFile): ImportResult = database.withTransaction {
         backup.tags.forEach { createTag(it) }
 
         var imported = 0
+        var skipped = 0
         backup.dreams.forEach { entry ->
-            val dreamDate = runCatching { LocalDate.parse(entry.dreamDate) }.getOrNull() ?: return@forEach
+            val dreamDate = runCatching { LocalDate.parse(entry.dreamDate) }.getOrNull()
+            if (dreamDate == null) {
+                skipped++
+                return@forEach
+            }
             val createdAt = runCatching { Instant.parse(entry.createdAt) }.getOrNull() ?: Instant.now()
             val moods = entry.moods.mapNotNull { name -> runCatching { Mood.valueOf(name) }.getOrNull() }.toSet()
 
@@ -111,7 +121,7 @@ class DreamRepository @Inject constructor(
             )
             imported++
         }
-        return imported
+        ImportResult(imported = imported, skipped = skipped)
     }
 
     private fun DreamWithTags.toBackupDream() = BackupDream(
@@ -155,7 +165,10 @@ class DreamRepository @Inject constructor(
         moods: Set<Mood>,
         tagNames: List<String>,
         existingCreatedAt: Instant? = null,
-    ): Long {
+    ): Long = database.withTransaction {
+        // One transaction for the dream row, its search-index entry and its tag links. Without it a
+        // cancelled save (the autosave debounce being interrupted, say) could leave a dream with no
+        // tags or missing from search.
         val now = Instant.now()
         val dream = Dream(
             id = id ?: 0,
@@ -192,24 +205,30 @@ class DreamRepository @Inject constructor(
         dreamDao.clearTagsForDream(dreamId)
         dreamDao.insertCrossRefs(tagIds.map { tagId -> DreamTagCrossRef(dreamId = dreamId, tagId = tagId) })
 
-        return dreamId
+        dreamId
     }
 
-    /** Binned dreams drop out of the search index; [restore] rebuilds their entry. */
-    suspend fun softDelete(id: Long) {
+    /**
+     * Binned dreams drop out of the search index; [restore] rebuilds their entry. Each pairs a
+     * dream-table write with an index write, so both run in one transaction — otherwise a failure
+     * between them leaves an index row that makes a later [restore] collide on the same rowid.
+     */
+    suspend fun softDelete(id: Long) = database.withTransaction {
         dreamDao.softDelete(id, Instant.now())
         dreamFtsDao.deleteByDreamId(id)
     }
 
-    suspend fun softDeleteAll(ids: List<Long>) {
+    suspend fun softDeleteAll(ids: List<Long>) = database.withTransaction {
         dreamDao.softDeleteAll(ids, Instant.now())
         ids.forEach { dreamFtsDao.deleteByDreamId(it) }
     }
 
-    suspend fun restore(id: Long) {
+    suspend fun restore(id: Long) = database.withTransaction {
         dreamDao.restore(id)
         val restored = dreamDao.observeDreamWithTags(id).first()
         if (restored != null) {
+            // Defensive: clear any index row left behind by an interrupted delete before inserting.
+            dreamFtsDao.deleteByDreamId(id)
             dreamFtsDao.insert(
                 DreamFts(dreamId = id, title = restored.dream.title, content = restored.dream.content, notes = restored.dream.notes),
             )

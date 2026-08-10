@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 /** One-shot outcome of an export/import, surfaced as a snackbar then cleared. */
 sealed interface BackupResult {
     data class Exported(val dreamCount: Int) : BackupResult
-    data class Imported(val dreamCount: Int) : BackupResult
+    data class Imported(val dreamCount: Int, val skippedCount: Int) : BackupResult
     data object Failed : BackupResult
 }
 
@@ -69,7 +69,8 @@ class SettingsViewModel @Inject constructor(
             _isBusy.value = true
             _result.value = runCatching {
                 val backup = backupManager.readFromUri(uri)
-                BackupResult.Imported(repository.importBackup(backup))
+                val result = repository.importBackup(backup)
+                BackupResult.Imported(dreamCount = result.imported, skippedCount = result.skipped)
             }.getOrElse { BackupResult.Failed }
             _isBusy.value = false
         }

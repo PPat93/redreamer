@@ -12,6 +12,7 @@ import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Serializable so the in-progress draft can be stashed in [SavedStateHandle] and survive the
@@ -60,6 +64,7 @@ class DreamEditorViewModel @Inject constructor(
     private var dreamId: Long? = existingDreamId
     private var createdAt: Instant? = null
     private var autosaveJob: Job? = null
+    private val persistMutex = Mutex()
 
     private val _uiState = MutableStateFlow(DreamEditorUiState())
     val uiState: StateFlow<DreamEditorUiState> = _uiState.asStateFlow()
@@ -175,30 +180,38 @@ class DreamEditorViewModel @Inject constructor(
         }
     }
 
-    private suspend fun persist() {
-        val state = _uiState.value
-        if (state.title.isBlank() && state.content.isBlank()) return
+    /**
+     * Serialised, and deliberately uncancellable once started. A debounced autosave can still be
+     * mid-write when the user taps Save; letting the two overlap meant both read a null [dreamId]
+     * and inserted a *second* copy of the same dream.
+     */
+    private suspend fun persist() = persistMutex.withLock {
+        withContext(NonCancellable) {
+            val state = _uiState.value
+            if (state.title.isBlank() && state.content.isBlank()) return@withContext
 
-        // Pin the creation time on first save; otherwise every later autosave of a new dream would
-        // push createdAt forward, which is meant to be immutable and is the list's tiebreak sort key.
-        val createdAtToUse = createdAt ?: Instant.now().also { createdAt = it }
+            // Pin the creation time on first save; otherwise every later autosave of a new dream
+            // would push createdAt forward, which is meant to be immutable and is the list's
+            // tiebreak sort key.
+            val createdAtToUse = createdAt ?: Instant.now().also { createdAt = it }
 
-        dreamId = repository.saveDream(
-            id = dreamId,
-            title = state.title,
-            content = state.content,
-            notes = state.notes,
-            dreamDate = state.dreamDate,
-            isLucid = state.isLucid,
-            lucidity = state.lucidity,
-            clarity = state.clarity,
-            isNightmare = state.isNightmare,
-            isRecurring = state.isRecurring,
-            moods = state.moods,
-            tagNames = state.tags,
-            existingCreatedAt = createdAtToUse,
-        )
-        stashDraft(state)
+            dreamId = repository.saveDream(
+                id = dreamId,
+                title = state.title,
+                content = state.content,
+                notes = state.notes,
+                dreamDate = state.dreamDate,
+                isLucid = state.isLucid,
+                lucidity = state.lucidity,
+                clarity = state.clarity,
+                isNightmare = state.isNightmare,
+                isRecurring = state.isRecurring,
+                moods = state.moods,
+                tagNames = state.tags,
+                existingCreatedAt = createdAtToUse,
+            )
+            stashDraft(state)
+        }
     }
 
     private fun stashDraft(state: DreamEditorUiState) {
