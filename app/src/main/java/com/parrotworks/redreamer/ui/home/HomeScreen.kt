@@ -1,5 +1,6 @@
 package com.parrotworks.redreamer.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +62,15 @@ fun HomeScreen(
     var selectedTab by rememberSaveable { mutableStateOf(TAB_DREAMS) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    // Each tab's UI state (list scroll position, most importantly) is kept while the other tabs are
+    // shown. Swapping composables in a `when` otherwise destroys it, dumping a long dream list back
+    // to the top every time the user glances at Stats.
+    val tabStateHolder = rememberSaveableStateHolder()
+
+    // Back from a secondary tab should return to Dreams, not quit the app.
+    BackHandler(enabled = selectedTab != TAB_DREAMS) {
+        selectedTab = TAB_DREAMS
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -104,12 +115,14 @@ fun HomeScreen(
         },
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            when (selectedTab) {
-                TAB_DREAMS -> DreamListContent(onDreamClick = onDreamClick)
-                TAB_STATS -> StatsScreen()
-                else -> SettingsScreen(
-                    onShowMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
-                )
+            tabStateHolder.SaveableStateProvider(key = selectedTab) {
+                when (selectedTab) {
+                    TAB_DREAMS -> DreamListContent(onDreamClick = onDreamClick)
+                    TAB_STATS -> StatsScreen()
+                    else -> SettingsScreen(
+                        onShowMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+                    )
+                }
             }
         }
     }

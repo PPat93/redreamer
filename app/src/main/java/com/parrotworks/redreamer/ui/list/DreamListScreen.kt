@@ -103,7 +103,9 @@ fun DreamListContent(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                // Extra room at the bottom: Scaffold's inset doesn't account for the FAB, which
+                // would otherwise sit on top of the last dream in the list.
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(uiState.dreams, key = { it.dream.id }) { dreamWithTags ->
