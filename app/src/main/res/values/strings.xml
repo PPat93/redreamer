@@ -14,6 +14,9 @@
     <string name="dream_field_notes">Notes / interpretation</string>
     <string name="dream_field_date">Dream date</string>
     <string name="dream_field_clarity">Clarity</string>
+    <!-- Parameterised rather than concatenated: punctuation and word order around a value differ by language. -->
+    <string name="dream_field_clarity_value">Clarity: %1$d</string>
+    <string name="dream_field_lucidity_value">Lucidity: %1$d</string>
     <string name="dream_field_lucid">This was a lucid dream</string>
     <string name="dream_field_lucidity">Lucidity</string>
     <string name="dream_field_nightmare">Nightmare</string>

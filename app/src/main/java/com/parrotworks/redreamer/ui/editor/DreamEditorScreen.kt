@@ -4,6 +4,7 @@ package com.parrotworks.redreamer.ui.editor
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -49,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -87,12 +91,21 @@ fun DreamEditorScreen(
                     )
                 },
                 navigationIcon = {
+                    // "Back", not "Cancel": leaving keeps the dream, it doesn't discard it.
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_cancel))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
                 actions = {
-                    TextButton(onClick = { viewModel.saveNow(onSaved) }) {
+                    // Nothing to save with both title and text empty, so don't offer a button
+                    // that silently does nothing.
+                    TextButton(
+                        onClick = { viewModel.saveNow(onSaved) },
+                        enabled = uiState.title.isNotBlank() || uiState.content.isNotBlank(),
+                    ) {
                         Text(stringResource(R.string.action_save))
                     }
                 },
@@ -113,6 +126,9 @@ fun DreamEditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                // targetSdk 35 means edge-to-edge, and Scaffold's insets cover the system bars but
+                // not the keyboard — without this the notes field ends up underneath it while typing.
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -155,7 +171,7 @@ fun DreamEditorScreen(
 
             Column {
                 Text(
-                    text = stringResource(R.string.dream_field_clarity) + ": ${uiState.clarity}",
+                    text = stringResource(R.string.dream_field_clarity_value, uiState.clarity),
                     style = MaterialTheme.typography.labelLarge,
                 )
                 Slider(
@@ -166,15 +182,16 @@ fun DreamEditorScreen(
                 )
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = uiState.isLucid, onCheckedChange = viewModel::onLucidChange)
-                Text(stringResource(R.string.dream_field_lucid))
-            }
+            CheckboxRow(
+                checked = uiState.isLucid,
+                onCheckedChange = viewModel::onLucidChange,
+                label = stringResource(R.string.dream_field_lucid),
+            )
 
             if (uiState.isLucid) {
                 Column {
                     Text(
-                        text = stringResource(R.string.dream_field_lucidity) + ": ${uiState.lucidity}",
+                        text = stringResource(R.string.dream_field_lucidity_value, uiState.lucidity),
                         style = MaterialTheme.typography.labelLarge,
                     )
                     Slider(
@@ -186,15 +203,17 @@ fun DreamEditorScreen(
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = uiState.isNightmare, onCheckedChange = viewModel::onNightmareChange)
-                Text(stringResource(R.string.dream_field_nightmare))
-            }
+            CheckboxRow(
+                checked = uiState.isNightmare,
+                onCheckedChange = viewModel::onNightmareChange,
+                label = stringResource(R.string.dream_field_nightmare),
+            )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = uiState.isRecurring, onCheckedChange = viewModel::onRecurringChange)
-                Text(stringResource(R.string.dream_field_recurring))
-            }
+            CheckboxRow(
+                checked = uiState.isRecurring,
+                onCheckedChange = viewModel::onRecurringChange,
+                label = stringResource(R.string.dream_field_recurring),
+            )
 
             TagEditor(
                 tagInput = uiState.tagInput,
@@ -223,6 +242,29 @@ fun DreamEditorScreen(
 
             Spacer(Modifier.height(32.dp))
         }
+    }
+}
+
+/**
+ * The whole row toggles, not just the box — a bare Checkbox is a small target and tapping its label
+ * did nothing. `toggleable` with a Checkbox role also merges the two into one node for screen
+ * readers instead of an unlabelled checkbox next to loose text.
+ */
+@Composable
+private fun CheckboxRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    label: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, onValueChange = onCheckedChange, role = Role.Checkbox),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = checked, onCheckedChange = null)
+        Spacer(Modifier.width(8.dp))
+        Text(label)
     }
 }
 
