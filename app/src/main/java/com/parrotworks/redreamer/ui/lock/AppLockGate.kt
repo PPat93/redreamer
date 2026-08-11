@@ -3,6 +3,7 @@ package com.parrotworks.redreamer.ui.lock
 import android.content.Context
 import android.content.ContextWrapper
 import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -91,9 +93,15 @@ fun AppLockGate(
         onDispose { if (lockActive) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
     }
 
+    val covered = lockEnabled == null || (lockActive && !unlocked)
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Rendered before the preference has loaded too — it is only ever *covered*, never discarded.
-        content()
+        // Semantics are stripped while covered: the overlay stops touches and hides pixels, but
+        // without this a screen reader would happily read out the dream sitting behind it.
+        Box(modifier = if (covered) Modifier.clearAndSetSemantics {} else Modifier) {
+            content()
+        }
 
         when {
             // Preference still loading: cover without prompting, so entries can't flash on screen
@@ -118,6 +126,10 @@ private fun BlankCover() {
 
 @Composable
 private fun LockOverlay(onRequestUnlock: (UnlockStrings) -> Unit) {
+    // Swallow back. It can't reach the covered UI visually, but it would still reach its back
+    // handlers — quietly popping screens or clearing a selection behind the lock screen.
+    BackHandler(enabled = true) {}
+
     val strings = UnlockStrings(
         title = stringResource(R.string.app_lock_prompt_title),
         subtitle = stringResource(R.string.app_lock_prompt_subtitle),
