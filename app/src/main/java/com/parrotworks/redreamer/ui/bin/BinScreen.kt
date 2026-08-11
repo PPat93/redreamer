@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,8 +56,8 @@ fun BinScreen(
     viewModel: BinViewModel = hiltViewModel(),
 ) {
     val binnedDreams by viewModel.binnedDreams.collectAsStateWithLifecycle()
-    var pendingDeleteForeverId by remember { mutableStateOf<Long?>(null) }
-    var showEmptyBinConfirm by remember { mutableStateOf(false) }
+    var pendingDeleteForeverId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showEmptyBinConfirm by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -110,10 +112,15 @@ fun BinScreen(
             title = { Text(stringResource(R.string.bin_empty_confirm_title)) },
             text = { Text(stringResource(R.string.bin_empty_confirm_body)) },
             confirmButton = {
-                TextButton(onClick = {
-                    showEmptyBinConfirm = false
-                    viewModel.emptyBin()
-                }) {
+                TextButton(
+                    onClick = {
+                        showEmptyBinConfirm = false
+                        viewModel.emptyBin()
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
                     Text(stringResource(R.string.bin_empty_action))
                 }
             },
@@ -132,10 +139,15 @@ fun BinScreen(
             title = { Text(stringResource(R.string.bin_delete_forever_confirm_title)) },
             text = { Text(stringResource(R.string.bin_delete_forever_confirm_body)) },
             confirmButton = {
-                TextButton(onClick = {
-                    pendingDeleteForeverId = null
-                    viewModel.deleteForever(deleteId)
-                }) {
+                TextButton(
+                    onClick = {
+                        pendingDeleteForeverId = null
+                        viewModel.deleteForever(deleteId)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
                     Text(stringResource(R.string.action_delete_forever))
                 }
             },

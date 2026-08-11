@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +53,7 @@ fun TagManagementScreen(
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     var renamingTag by remember { mutableStateOf<TagWithUsage?>(null) }
     var deletingTag by remember { mutableStateOf<TagWithUsage?>(null) }
-    var showAddDialog by remember { mutableStateOf(false) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
     // Renaming onto an existing name merges the two tags, which rewrites every dream carrying the
     // old one. Too destructive to do silently, so it gets confirmed like a deletion.
     var pendingMerge by remember { mutableStateOf<PendingMerge?>(null) }
@@ -174,10 +176,15 @@ fun TagManagementScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    deletingTag = null
-                    viewModel.deleteTag(tag.id)
-                }) {
+                TextButton(
+                    onClick = {
+                        deletingTag = null
+                        viewModel.deleteTag(tag.id)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
                     Text(stringResource(R.string.action_delete))
                 }
             },
