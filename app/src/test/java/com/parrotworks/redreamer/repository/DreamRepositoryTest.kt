@@ -112,6 +112,67 @@ class DreamRepositoryTest {
     }
 
     @Test
+    fun editingADreamDoesNotMoveItInTheList() = runTest {
+        // The whole point of dreamDate + createdAt as sort keys: revising an old entry must not
+        // bump it to the top the way an updatedAt sort would.
+        addDream(title = "Oldest", dreamDate = LocalDate.of(2026, 7, 1))
+        val middleId = addDream(title = "Middle", dreamDate = LocalDate.of(2026, 7, 10))
+        addDream(title = "Newest", dreamDate = LocalDate.of(2026, 7, 20))
+        val originalCreatedAt = repository.observeDream(middleId).first()!!.dream.createdAt
+
+        repository.saveDream(
+            id = middleId,
+            title = "Middle, revised",
+            content = "new text entirely",
+            notes = "",
+            dreamDate = LocalDate.of(2026, 7, 10),
+            isLucid = false,
+            lucidity = null,
+            clarity = 5,
+            isNightmare = false,
+            isRecurring = false,
+            moods = emptySet(),
+            tagNames = emptyList(),
+            existingCreatedAt = originalCreatedAt,
+        )
+
+        assertEquals(
+            listOf("Newest", "Middle, revised", "Oldest"),
+            repository.observeLiveDreams().first().map { it.dream.title },
+        )
+    }
+
+    @Test
+    fun editingRepairsAMissingSearchIndexRow() = runTest {
+        val id = addDream(content = "Above the sea")
+        // Simulate index drift, however it might arise.
+        database.dreamFtsDao().deleteByDreamId(id)
+        assertTrue(repository.searchDreams("sea").first().isEmpty())
+
+        repository.saveDream(
+            id = id,
+            title = "Flying",
+            content = "Above the mountains",
+            notes = "",
+            dreamDate = LocalDate.of(2026, 7, 20),
+            isLucid = false,
+            lucidity = null,
+            clarity = 5,
+            isNightmare = false,
+            isRecurring = false,
+            moods = emptySet(),
+            tagNames = emptyList(),
+            existingCreatedAt = Instant.parse("2026-07-20T06:00:00Z"),
+        )
+
+        assertEquals(
+            "an edit should restore searchability rather than silently no-op",
+            1,
+            repository.searchDreams("mountains").first().size,
+        )
+    }
+
+    @Test
     fun binnedDreamsLeaveTheListAndTheSearchIndex() = runTest {
         val id = addDream(content = "Above the sea")
 

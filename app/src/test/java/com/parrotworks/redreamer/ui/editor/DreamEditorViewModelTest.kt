@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
 import com.parrotworks.redreamer.MainDispatcherRule
+import com.parrotworks.redreamer.clearForTest
 import com.parrotworks.redreamer.data.AppDatabase
 import com.parrotworks.redreamer.data.Mood
 import com.parrotworks.redreamer.repository.DreamRepository
@@ -64,12 +65,18 @@ class DreamEditorViewModelTest {
 
     @After
     fun tearDown() {
+        // Order matters: stop the ViewModels' coroutines first, then the scope they flush onto,
+        // then the database they write to.
+        editors.forEach { it.clearForTest() }
+        editors.clear()
         applicationScope.cancel()
         database.close()
     }
 
+    private val editors = mutableListOf<DreamEditorViewModel>()
+
     private fun newEditor(savedState: SavedStateHandle = SavedStateHandle()) =
-        DreamEditorViewModel(repository, applicationScope, savedState)
+        DreamEditorViewModel(repository, applicationScope, savedState).also { editors += it }
 
     private suspend fun liveDreams() = repository.observeLiveDreams().first()
 

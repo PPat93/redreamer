@@ -192,7 +192,11 @@ class DreamRepository @Inject constructor(
             newId
         } else {
             dreamDao.updateDream(dream)
-            dreamFtsDao.update(id, title = title, content = content, notes = notes)
+            // Replace rather than UPDATE: an UPDATE silently matches nothing if the index row is
+            // missing, leaving the dream permanently unsearchable with no sign of it. Rewriting the
+            // row means editing a dream always repairs its own index entry.
+            dreamFtsDao.deleteByDreamId(id)
+            dreamFtsDao.insert(DreamFts(dreamId = id, title = title, content = content, notes = notes))
             id
         }
 

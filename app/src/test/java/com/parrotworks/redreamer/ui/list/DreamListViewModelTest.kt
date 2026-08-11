@@ -3,6 +3,7 @@ package com.parrotworks.redreamer.ui.list
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.parrotworks.redreamer.MainDispatcherRule
+import com.parrotworks.redreamer.clearForTest
 import com.parrotworks.redreamer.data.AppDatabase
 import com.parrotworks.redreamer.repository.DreamRepository
 import java.time.LocalDate
@@ -55,6 +56,8 @@ class DreamListViewModelTest {
 
     @After
     fun tearDown() {
+        viewModels.forEach { it.clearForTest() }
+        viewModels.clear()
         database.close()
     }
 
@@ -76,7 +79,9 @@ class DreamListViewModelTest {
         )
     }
 
-    private fun newViewModel() = DreamListViewModel(repository)
+    private val viewModels = mutableListOf<DreamListViewModel>()
+
+    private fun newViewModel() = DreamListViewModel(repository).also { viewModels += it }
 
     /** Real time: the ViewModel mixes a debounce with database reads on background threads. */
     private suspend fun DreamListViewModel.awaitUi(
