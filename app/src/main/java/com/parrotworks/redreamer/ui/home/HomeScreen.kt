@@ -28,6 +28,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,8 @@ fun HomeScreen(
     onAddDreamClick: () -> Unit,
     onBinClick: () -> Unit,
     onManageTagsClick: () -> Unit,
+    deletedCount: Int = 0,
+    onDeletedMessageShown: () -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(TAB_DREAMS) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -70,6 +74,21 @@ fun HomeScreen(
     // Back from a secondary tab should return to Dreams, not quit the app.
     BackHandler(enabled = selectedTab != TAB_DREAMS) {
         selectedTab = TAB_DREAMS
+    }
+
+    val showMessage: (String) -> Unit = { message ->
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    // A dream deleted from its detail screen is confirmed here, since that screen has already gone.
+    val context = LocalContext.current
+    LaunchedEffect(deletedCount) {
+        if (deletedCount <= 0) return@LaunchedEffect
+        showMessage(context.getString(R.string.dream_deleted_to_bin))
+        onDeletedMessageShown()
     }
 
     Scaffold(
@@ -117,11 +136,12 @@ fun HomeScreen(
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             tabStateHolder.SaveableStateProvider(key = selectedTab) {
                 when (selectedTab) {
-                    TAB_DREAMS -> DreamListContent(onDreamClick = onDreamClick)
-                    TAB_STATS -> StatsScreen()
-                    else -> SettingsScreen(
-                        onShowMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } },
+                    TAB_DREAMS -> DreamListContent(
+                        onDreamClick = onDreamClick,
+                        onShowMessage = showMessage,
                     )
+                    TAB_STATS -> StatsScreen()
+                    else -> SettingsScreen(onShowMessage = showMessage)
                 }
             }
         }

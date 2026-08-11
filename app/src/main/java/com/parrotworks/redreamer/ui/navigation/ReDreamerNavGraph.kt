@@ -1,6 +1,8 @@
 package com.parrotworks.redreamer.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -16,12 +18,20 @@ import com.parrotworks.redreamer.ui.tags.TagManagementScreen
 @Composable
 fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()) {
     NavHost(navController = navController, startDestination = Destinations.HOME) {
-        composable(Destinations.HOME) {
+        composable(Destinations.HOME) { entry ->
+            val deletedCount by entry.savedStateHandle
+                .getStateFlow(Destinations.RESULT_DREAMS_DELETED, 0)
+                .collectAsStateWithLifecycle()
+
             HomeScreen(
                 onDreamClick = { id -> navController.navigate(Destinations.dreamDetail(id)) },
                 onAddDreamClick = { navController.navigate(Destinations.dreamEditorNew()) },
                 onBinClick = { navController.navigate(Destinations.BIN) },
                 onManageTagsClick = { navController.navigate(Destinations.TAG_MANAGEMENT) },
+                deletedCount = deletedCount,
+                onDeletedMessageShown = {
+                    entry.savedStateHandle[Destinations.RESULT_DREAMS_DELETED] = 0
+                },
             )
         }
 
@@ -43,7 +53,13 @@ fun ReDreamerNavGraph(navController: NavHostController = rememberNavController()
             DreamDetailScreen(
                 onEditClick = { navController.navigate(Destinations.dreamEditorEdit(dreamId)) },
                 onBack = { navController.popBackStack() },
-                onDeleted = { navController.popBackStack() },
+                onDeleted = {
+                    // Hand the confirmation to the list; this screen is about to disappear.
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(Destinations.RESULT_DREAMS_DELETED, 1)
+                    navController.popBackStack()
+                },
             )
         }
 

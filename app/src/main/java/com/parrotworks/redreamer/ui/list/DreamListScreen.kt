@@ -1,5 +1,6 @@
 package com.parrotworks.redreamer.ui.list
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,12 +28,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,9 +49,11 @@ import com.parrotworks.redreamer.ui.components.DreamCard
 @Composable
 fun DreamListContent(
     onDreamClick: (Long) -> Unit,
+    onShowMessage: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DreamListViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val filters by viewModel.filters.collectAsStateWithLifecycle()
     val availableTags by viewModel.availableTags.collectAsStateWithLifecycle()
@@ -56,6 +63,11 @@ fun DreamListContent(
     val isSelectionMode = selectedIds.isNotEmpty()
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
+
+    // Back should back out of the mode you're in before it leaves the screen — otherwise the only
+    // way out of selection or search was the small ✕, and back quit the app instead.
+    BackHandler(enabled = isSelectionMode) { viewModel.clearSelection() }
+    BackHandler(enabled = !isSelectionMode && isSearchBarVisible) { viewModel.closeSearch() }
 
     Column(modifier = modifier.fillMaxSize()) {
         when {
@@ -164,6 +176,13 @@ fun DreamListContent(
                 TextButton(onClick = {
                     showDeleteConfirm = false
                     viewModel.deleteSelected()
+                    onShowMessage(
+                        if (count == 1) {
+                            context.getString(R.string.dream_deleted_to_bin)
+                        } else {
+                            context.getString(R.string.dream_deleted_to_bin_many, count)
+                        },
+                    )
                 }) {
                     Text(stringResource(R.string.action_delete))
                 }
@@ -183,12 +202,17 @@ private fun DreamSearchBar(
     onQueryChange: (String) -> Unit,
     onClose: () -> Unit,
 ) {
+    // Opening search should put the cursor in the field; needing a second tap to type is a papercut.
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .focusRequester(focusRequester),
         singleLine = true,
         placeholder = { Text(stringResource(R.string.search_placeholder)) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },

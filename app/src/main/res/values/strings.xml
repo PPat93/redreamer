@@ -45,6 +45,7 @@
     <string name="action_copy">Copy dream</string>
     <string name="action_copy_text_only">Copy text only</string>
     <string name="dream_deleted_to_bin">Moved to bin</string>
+    <string name="dream_deleted_to_bin_many">Moved %1$d dreams to bin</string>
     <string name="dream_copied">Dream copied</string>
     <string name="dream_text_copied">Dream text copied</string>
 
