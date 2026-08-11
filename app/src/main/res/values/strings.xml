@@ -143,6 +143,7 @@
     <string name="filters_nightmare_chip">Nightmare</string>
     <string name="filters_recurring_chip">Recurring</string>
     <string name="filters_date_range">Date range</string>
+    <string name="filters_clear_date">Clear %1$s date</string>
     <string name="filters_from_date">From</string>
     <string name="filters_to_date">To</string>
 

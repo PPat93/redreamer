@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,6 +64,9 @@ fun FilterBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // Scrollable: with a long tag list the sections below it were unreachable, and the
+                // tag chips themselves could be clipped off the bottom of the sheet entirely.
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -138,19 +143,23 @@ fun FilterBottomSheet(
         }
     }
 
+    // Bounds keep the range in order. Picking "from" after "to" used to be allowed and simply
+    // matched nothing, which looked identical to having no dreams in that period.
     if (showStartPicker) {
         DreamDatePickerDialog(
-            initialDate = filters.startDate ?: LocalDate.now(),
+            initialDate = filters.startDate ?: filters.endDate ?: LocalDate.now(),
             onDismissRequest = { showStartPicker = false },
             onDateSelected = onStartDateChange,
+            maxDate = filters.endDate,
         )
     }
 
     if (showEndPicker) {
         DreamDatePickerDialog(
-            initialDate = filters.endDate ?: LocalDate.now(),
+            initialDate = filters.endDate ?: filters.startDate ?: LocalDate.now(),
             onDismissRequest = { showEndPicker = false },
             onDateSelected = onEndDateChange,
+            minDate = filters.startDate,
         )
     }
 }
@@ -168,12 +177,15 @@ private fun DateRangeChip(
         label = { Text(date?.format(dateFormatter) ?: label) },
         trailingIcon = if (date != null) {
             {
+                // Labelled, and given real padding — a bare 16dp icon is both unannounced and
+                // far below the minimum touch target.
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.filters_clear_date, label),
                     modifier = Modifier
-                        .size(16.dp)
-                        .clickable(onClick = onClear),
+                        .clickable(onClick = onClear)
+                        .padding(4.dp)
+                        .size(18.dp),
                 )
             }
         } else {
