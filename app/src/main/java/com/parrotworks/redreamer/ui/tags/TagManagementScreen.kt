@@ -52,6 +52,9 @@ fun TagManagementScreen(
     var renamingTag by remember { mutableStateOf<TagWithUsage?>(null) }
     var deletingTag by remember { mutableStateOf<TagWithUsage?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    // Renaming onto an existing name merges the two tags, which rewrites every dream carrying the
+    // old one. Too destructive to do silently, so it gets confirmed like a deletion.
+    var pendingMerge by remember { mutableStateOf<PendingMerge?>(null) }
 
     Scaffold(
         topBar = {
@@ -84,7 +87,8 @@ fun TagManagementScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
+                // Bottom room for the FAB, which Scaffold's inset doesn't account for.
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(tags, key = { it.id }) { tag ->
@@ -102,6 +106,8 @@ fun TagManagementScreen(
         TagNameDialog(
             title = stringResource(R.string.tag_add_dialog_title),
             initialName = "",
+            // Creating a duplicate silently does nothing, so say so instead of pretending it worked.
+            isDuplicate = { candidate -> tags.any { it.name.equals(candidate, ignoreCase = true) } },
             onDismiss = { showAddDialog = false },
             onConfirm = { name ->
                 showAddDialog = false
@@ -114,10 +120,42 @@ fun TagManagementScreen(
         TagNameDialog(
             title = stringResource(R.string.tag_rename_dialog_title),
             initialName = tag.name,
+            // A collision here is offered as a merge rather than blocked.
+            isDuplicate = { false },
             onDismiss = { renamingTag = null },
             onConfirm = { newName ->
                 renamingTag = null
-                viewModel.renameOrMerge(tag.id, newName)
+                val target = tags.firstOrNull {
+                    it.id != tag.id && it.name.equals(newName.trim(), ignoreCase = true)
+                }
+                if (target == null) {
+                    viewModel.renameOrMerge(tag.id, newName)
+                } else {
+                    pendingMerge = PendingMerge(source = tag, targetName = target.name)
+                }
+            },
+        )
+    }
+
+    pendingMerge?.let { merge ->
+        AlertDialog(
+            onDismissRequest = { pendingMerge = null },
+            title = { Text(stringResource(R.string.tag_merge_confirm_title)) },
+            text = {
+                Text(stringResource(R.string.tag_merge_confirm_body, merge.targetName, merge.source.name))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingMerge = null
+                    viewModel.renameOrMerge(merge.source.id, merge.targetName)
+                }) {
+                    Text(stringResource(R.string.action_merge))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingMerge = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
             },
         )
     }
@@ -181,14 +219,20 @@ private fun TagRow(tag: TagWithUsage, onRename: () -> Unit, onDelete: () -> Unit
     }
 }
 
+/** A rename that collides with another tag, held until the user confirms the merge. */
+private data class PendingMerge(val source: TagWithUsage, val targetName: String)
+
 @Composable
 private fun TagNameDialog(
     title: String,
     initialName: String,
+    isDuplicate: (String) -> Boolean,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     var text by remember(initialName) { mutableStateOf(initialName) }
+    val trimmed = text.trim()
+    val duplicate = trimmed.isNotEmpty() && isDuplicate(trimmed)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -198,11 +242,17 @@ private fun TagNameDialog(
                 value = text,
                 onValueChange = { text = it },
                 singleLine = true,
+                isError = duplicate,
+                supportingText = if (duplicate) {
+                    { Text(stringResource(R.string.tag_already_exists)) }
+                } else {
+                    null
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) {
+            TextButton(onClick = { onConfirm(text) }, enabled = trimmed.isNotEmpty() && !duplicate) {
                 Text(stringResource(R.string.action_save))
             }
         },

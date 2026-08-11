@@ -117,6 +117,10 @@
     <string name="tag_rename_dialog_title">Rename tag</string>
     <string name="tag_add_dialog_title">New tag</string>
     <string name="tag_add_new">New tag</string>
+    <string name="tag_already_exists">That tag already exists</string>
+    <string name="action_merge">Merge</string>
+    <string name="tag_merge_confirm_title">Merge tags?</string>
+    <string name="tag_merge_confirm_body">A tag called \"%1$s\" already exists. Renaming \"%2$s\" will merge the two: dreams tagged \"%2$s\" move over and \"%2$s\" is removed. This can\'t be undone.</string>
     <string name="tag_delete_confirm_title">Delete tag?</string>
     <string name="tag_delete_confirm_body_none">This tag isn\'t used by any dreams.</string>
     <string name="tag_delete_confirm_body_one">This tag is used by 1 dream. Deleting it won\'t affect the dream itself.</string>
