@@ -54,9 +54,19 @@ fun AppLockGate(
 ) {
     val lockEnabled by viewModel.lockEnabled.collectAsStateWithLifecycle()
     val unlocked by viewModel.unlocked.collectAsStateWithLifecycle()
-    val activity = LocalContext.current.findFragmentActivity()
+    val context = LocalContext.current
+    val activity = context.findFragmentActivity()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val lockActive = lockEnabled == true
+
+    /*
+     * If the device no longer has any biometric or screen lock, honouring the stored preference
+     * would show a lock screen whose prompt can never succeed — the journal would be permanently
+     * unreachable, including the export that would rescue it. Degrading open is the safer failure:
+     * the database isn't encrypted anyway, so anyone with this level of device access could read it
+     * regardless, whereas bricking costs the user every dream they've written.
+     */
+    val canAuthenticate = context.canUseAppLock()
+    val lockActive = lockEnabled == true && canAuthenticate
 
     // Re-lock when the user actually leaves — but not for system UI the app opened itself. A file
     // picker, share sheet or the device-credential keyguard all stop our activity while the user

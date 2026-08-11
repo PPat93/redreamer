@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backup
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -120,8 +122,16 @@ fun SettingsScreen(
             supportingContent = { Text(stringResource(R.string.settings_auto_backup_body)) },
             leadingContent = { Icon(Icons.Filled.Backup, contentDescription = null) },
             trailingContent = {
-                Switch(checked = autoBackupEnabled, onCheckedChange = viewModel::setAutoBackupEnabled)
+                Switch(checked = autoBackupEnabled, onCheckedChange = null)
             },
+            // Whole row toggles; a switch alone is a small target and the label did nothing.
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = autoBackupEnabled,
+                    onValueChange = viewModel::setAutoBackupEnabled,
+                    role = Role.Switch,
+                ),
         )
 
         HorizontalDivider()
@@ -142,10 +152,20 @@ fun SettingsScreen(
             trailingContent = {
                 Switch(
                     checked = appLockEnabled,
-                    onCheckedChange = viewModel::setAppLockEnabled,
-                    enabled = canUseAppLock,
+                    onCheckedChange = null,
+                    // Always allow switching *off*. If device security was removed after enabling,
+                    // a disabled switch would leave the setting stuck on with no way to clear it.
+                    enabled = canUseAppLock || appLockEnabled,
                 )
             },
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = appLockEnabled,
+                    enabled = canUseAppLock || appLockEnabled,
+                    onValueChange = viewModel::setAppLockEnabled,
+                    role = Role.Switch,
+                ),
         )
 
         HorizontalDivider()
