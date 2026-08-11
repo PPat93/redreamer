@@ -312,7 +312,7 @@ private fun TagEditor(
                         trailingIcon = {
                             Icon(
                                 imageVector = Icons.Filled.Close,
-                                contentDescription = "Remove $tagName",
+                                contentDescription = stringResource(R.string.tag_remove, tagName),
                                 modifier = Modifier
                                     .size(16.dp)
                                     .clickable { onRemoveTag(tagName) },

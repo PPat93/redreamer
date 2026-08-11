@@ -27,8 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.data.DreamWithTags
 import java.time.format.DateTimeFormatter
 
@@ -66,22 +68,22 @@ fun DreamCard(
                     Spacer(Modifier.width(8.dp))
                 }
                 Text(
-                    text = dream.title.ifBlank { "Untitled dream" },
+                    text = dream.title.ifBlank { stringResource(R.string.dream_untitled) },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (dream.isLucid) {
-                    Icon(Icons.Filled.Bedtime, contentDescription = "Lucid dream", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Bedtime, contentDescription = stringResource(R.string.dream_badge_lucid), modifier = Modifier.size(18.dp))
                 }
                 if (dream.isNightmare) {
                     Spacer(Modifier.width(4.dp))
-                    Icon(Icons.Filled.WarningAmber, contentDescription = "Nightmare", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.WarningAmber, contentDescription = stringResource(R.string.dream_detail_nightmare_label), modifier = Modifier.size(18.dp))
                 }
                 if (dream.isRecurring) {
                     Spacer(Modifier.width(4.dp))
-                    Icon(Icons.Filled.Repeat, contentDescription = "Recurring dream", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Filled.Repeat, contentDescription = stringResource(R.string.dream_detail_recurring_label), modifier = Modifier.size(18.dp))
                 }
             }
 

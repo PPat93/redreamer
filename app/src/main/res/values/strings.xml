@@ -23,6 +23,17 @@
     <string name="dream_add_tag">Add tag</string>
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
+    <string name="dream_untitled">Untitled dream</string>
+
+    <!-- Labels inside copied/shared dream text. Part of what the user sends to other people, so
+         they belong in resources rather than hardcoded in the builder. -->
+    <string name="share_notes_label">Notes:</string>
+    <string name="share_tags_label">Tags: %1$s</string>
+
+    <!-- Screen-reader labels for the badges on a dream card, and its tag chips. -->
+    <string name="dream_badge_lucid">Lucid dream</string>
+    <string name="tag_remove">Remove %1$s</string>
 
     <string name="dream_detail_title">Dream</string>
     <string name="action_edit">Edit</string>

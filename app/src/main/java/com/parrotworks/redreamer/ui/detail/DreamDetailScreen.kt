@@ -76,6 +76,15 @@ fun DreamDetailScreen(
 
     val copiedMessage = stringResource(R.string.dream_copied)
     val textCopiedMessage = stringResource(R.string.dream_text_copied)
+    val untitledLabel = stringResource(R.string.dream_untitled)
+    val notesLabel = stringResource(R.string.share_notes_label)
+    val fullText: (DreamWithTags) -> String = { dream ->
+        dream.toFullText(
+            untitledLabel = untitledLabel,
+            notesLabel = notesLabel,
+            tagsLabel = { names -> context.getString(R.string.share_tags_label, names) },
+        )
+    }
 
     // Android 13+ shows its own clipboard confirmation, so a snackbar there would double up.
     val confirmsCopyItself = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
@@ -95,7 +104,10 @@ fun DreamDetailScreen(
                 title = { Text(stringResource(R.string.dream_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
                 actions = {
@@ -122,7 +134,7 @@ fun DreamDetailScreen(
                 dreamWithTags = dreamWithTagsValue,
                 modifier = Modifier.padding(paddingValues),
                 onCopyFull = {
-                    clipboardManager.setText(AnnotatedString(dreamWithTagsValue.toFullText()))
+                    clipboardManager.setText(AnnotatedString(fullText(dreamWithTagsValue)))
                     announceCopy(copiedMessage)
                 },
                 onCopyTextOnly = {
@@ -132,7 +144,7 @@ fun DreamDetailScreen(
                 onShare = {
                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, dreamWithTagsValue.toFullText())
+                        putExtra(Intent.EXTRA_TEXT, fullText(dreamWithTagsValue))
                     }
                     viewModel.onShareSheetOpened()
                     context.startActivity(Intent.createChooser(sendIntent, null))
@@ -180,7 +192,10 @@ private fun DreamDetailContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(dream.title.ifBlank { "Untitled dream" }, style = MaterialTheme.typography.headlineSmall)
+        Text(
+            text = dream.title.ifBlank { stringResource(R.string.dream_untitled) },
+            style = MaterialTheme.typography.headlineSmall,
+        )
         Text(
             text = dream.dreamDate.format(dateFormatter),
             style = MaterialTheme.typography.labelLarge,
@@ -250,18 +265,23 @@ private fun DreamStatsSection(dream: Dream) {
     }
 }
 
-private fun DreamWithTags.toFullText(): String = buildString {
-    appendLine(dream.title.ifBlank { "Untitled dream" })
+/** Labels are passed in rather than hardcoded so copied and shared text follows the app's language. */
+private fun DreamWithTags.toFullText(
+    untitledLabel: String,
+    notesLabel: String,
+    tagsLabel: (String) -> String,
+): String = buildString {
+    appendLine(dream.title.ifBlank { untitledLabel })
     appendLine(dream.dreamDate.format(dateFormatter))
     appendLine()
     appendLine(dream.content)
     if (dream.notes.isNotBlank()) {
         appendLine()
-        appendLine("Notes:")
+        appendLine(notesLabel)
         appendLine(dream.notes)
     }
     if (tags.isNotEmpty()) {
         appendLine()
-        appendLine("Tags: " + tags.joinToString(", ") { it.name })
+        appendLine(tagsLabel(tags.joinToString(", ") { it.name }))
     }
 }
