@@ -35,7 +35,7 @@ import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.data.Mood
 import com.parrotworks.redreamer.repository.DreamStats
 import com.parrotworks.redreamer.repository.MonthCount
-import com.parrotworks.redreamer.ui.components.ComingSoonContent
+import com.parrotworks.redreamer.ui.components.EmptyStateContent
 import com.parrotworks.redreamer.ui.components.TagChip
 import com.parrotworks.redreamer.ui.components.displayName
 import java.time.format.TextStyle
@@ -50,7 +50,7 @@ fun StatsScreen(
     val stats by viewModel.stats.collectAsStateWithLifecycle()
 
     if (stats.totalDreams == 0) {
-        ComingSoonContent(
+        EmptyStateContent(
             title = stringResource(R.string.stats_empty_title),
             body = stringResource(R.string.stats_empty_body),
             modifier = modifier,

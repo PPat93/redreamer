@@ -149,7 +149,7 @@ fun SettingsScreen(
         )
 
         HorizontalDivider()
-        // Plain text rather than ComingSoonContent: that component fills available height,
+        // Plain text rather than EmptyStateContent: that component fills available height,
         // which has no meaning inside a vertically scrolling column.
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

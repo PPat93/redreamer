@@ -11,10 +11,15 @@
 *.jar
 
 # Generated files
-bin/
-gen/
-out/
-build/
+# Anchored to the repo root on purpose. Unanchored `bin/` also matches source packages — it was
+# silently excluding ui/bin (the whole Bin screen) from every commit.
+/bin/
+/gen/
+/out/
+/build/
+/app/bin/
+/app/gen/
+/app/out/
 /app/build/
 
 # Gradle files

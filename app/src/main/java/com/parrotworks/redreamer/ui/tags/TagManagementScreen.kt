@@ -41,7 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.parrotworks.redreamer.R
 import com.parrotworks.redreamer.data.TagWithUsage
-import com.parrotworks.redreamer.ui.components.ComingSoonContent
+import com.parrotworks.redreamer.ui.components.EmptyStateContent
 
 @Composable
 fun TagManagementScreen(
@@ -74,7 +74,7 @@ fun TagManagementScreen(
         },
     ) { paddingValues ->
         if (tags.isEmpty()) {
-            ComingSoonContent(
+            EmptyStateContent(
                 title = stringResource(R.string.tag_management_empty_title),
                 body = stringResource(R.string.tag_management_empty_body),
                 modifier = Modifier.padding(paddingValues),

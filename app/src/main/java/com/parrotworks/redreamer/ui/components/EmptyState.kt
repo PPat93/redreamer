@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ComingSoonContent(title: String, body: String, modifier: Modifier = Modifier) {
+fun EmptyStateContent(title: String, body: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize().padding(32.dp),
         contentAlignment = Alignment.Center,
