@@ -93,6 +93,8 @@
     <string name="stats_top_tags_title">Top tags</string>
     <string name="stats_mood_distribution_title">Moods</string>
     <string name="stats_dreams_per_month_title">Dreams per month</string>
+    <!-- Bar height alone conveys nothing to a screen reader, so each bar states its own value. -->
+    <string name="stats_month_bar_description">%1$s: %2$d dreams</string>
 
     <string name="bin_title">Bin</string>
     <string name="bin_empty_title">Bin is empty</string>

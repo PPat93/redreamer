@@ -15,6 +15,10 @@ class StatsViewModel @Inject constructor(
     repository: DreamRepository,
 ) : ViewModel() {
 
-    val stats: StateFlow<DreamStats> = repository.observeStats()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DreamStats.EMPTY)
+    /**
+     * Null until the first emission. Starting from [DreamStats.EMPTY] would be indistinguishable
+     * from "no dreams logged", so opening the tab briefly claimed the journal was empty.
+     */
+    val stats: StateFlow<DreamStats?> = repository.observeStats()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }

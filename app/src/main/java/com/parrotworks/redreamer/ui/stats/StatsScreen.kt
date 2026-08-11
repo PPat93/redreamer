@@ -27,6 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -47,7 +49,13 @@ fun StatsScreen(
     modifier: Modifier = Modifier,
     viewModel: StatsViewModel = hiltViewModel(),
 ) {
-    val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val loadedStats by viewModel.stats.collectAsStateWithLifecycle()
+
+    // Nothing known yet — hold the space rather than asserting the journal is empty.
+    val stats = loadedStats ?: run {
+        Box(modifier = modifier.fillMaxSize())
+        return
+    }
 
     if (stats.totalDreams == 0) {
         EmptyStateContent(
@@ -204,7 +212,20 @@ private fun DreamsPerMonthChart(months: List<MonthCount>) {
             } else {
                 (maxBarHeight.value * (monthCount.count.toFloat() / maxCount)).roundToInt().dp.coerceAtLeast(4.dp)
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val monthLabel = monthCount.yearMonth.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+            val barDescription = stringResource(
+                R.string.stats_month_bar_description,
+                monthLabel,
+                monthCount.count,
+            )
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                // One spoken value per bar instead of a bare month name next to an invisible shape.
+                modifier = Modifier.semantics(mergeDescendants = true) {
+                    contentDescription = barDescription
+                },
+            ) {
                 Box(
                     modifier = Modifier
                         .width(24.dp)
@@ -212,10 +233,7 @@ private fun DreamsPerMonthChart(months: List<MonthCount>) {
                         .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp)),
                 )
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = monthCount.yearMonth.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
-                    style = MaterialTheme.typography.labelSmall,
-                )
+                Text(text = monthLabel, style = MaterialTheme.typography.labelSmall)
             }
         }
     }
