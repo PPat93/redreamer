@@ -64,6 +64,9 @@ class DreamEditorViewModel @Inject constructor(
     private val existingDreamId: Long? =
         savedStateHandle.get<Long>(Destinations.ARG_DREAM_ID)?.takeIf { it >= 0 }
 
+    /** True when this editor is composing a brand new dream rather than editing a stored one. */
+    private val isNewDream: Boolean = existingDreamId == null
+
     private var dreamId: Long? = existingDreamId
     private var createdAt: Instant? = null
     private var autosaveJob: Job? = null
@@ -209,7 +212,15 @@ class DreamEditorViewModel @Inject constructor(
         withContext(NonCancellable) {
             val state = _uiState.value
             if (state.title.isBlank() && state.content.isBlank()) {
-                // Nothing worth writing; don't keep pretending there's pending work.
+                // Emptying both fields after an autosave already created the dream used to leave it
+                // behind holding the text the user had just deleted. Only discard drafts this editor
+                // created — clearing the fields of an existing dream must not delete it.
+                val autosavedDraftId = dreamId.takeIf { isNewDream }
+                if (autosavedDraftId != null) {
+                    repository.discardDream(autosavedDraftId)
+                    dreamId = null
+                    createdAt = null
+                }
                 hasUnsavedChanges = false
                 return@withContext
             }

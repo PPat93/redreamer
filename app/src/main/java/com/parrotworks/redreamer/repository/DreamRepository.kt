@@ -239,6 +239,16 @@ class DreamRepository @Inject constructor(
         dreamDao.deleteForever(id)
     }
 
+    /**
+     * Removes a dream outright, bypassing the bin. For discarding something the user never
+     * deliberately saved — an autosaved draft they then emptied — where routing it through the bin
+     * would just be litter. Clears the search-index row too, since this skips [softDelete].
+     */
+    suspend fun discardDream(id: Long) = database.withTransaction {
+        dreamFtsDao.deleteByDreamId(id)
+        dreamDao.deleteForever(id)
+    }
+
     /** Permanently removes bin entries older than [BIN_RETENTION_DAYS]. Call once per app launch. */
     suspend fun purgeExpiredFromBin() {
         val cutoff = Instant.now().minus(BIN_RETENTION_DAYS, ChronoUnit.DAYS)

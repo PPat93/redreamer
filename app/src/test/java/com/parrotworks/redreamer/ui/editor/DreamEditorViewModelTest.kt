@@ -281,6 +281,52 @@ class DreamEditorViewModelTest {
     }
 
     @Test
+    fun emptyingAnAutosavedDraftDiscardsItInsteadOfKeepingDeletedText() = runTest {
+        val editor = newEditor()
+        editor.onTitleChange("Flying")
+        editor.onContentChange("Above the sea")
+        editor.saveAndWait()
+        assertEquals(1, liveDreams().size)
+
+        // Changed their mind and cleared the form.
+        editor.onTitleChange("")
+        editor.onContentChange("")
+        editor.saveAndWait()
+
+        assertTrue("an emptied draft must not survive holding the deleted text", liveDreams().isEmpty())
+    }
+
+    @Test
+    fun clearingAnExistingDreamDoesNotDeleteIt() = runTest {
+        val id = repository.saveDream(
+            id = null,
+            title = "Flying",
+            content = "Above the sea",
+            notes = "",
+            dreamDate = LocalDate.of(2026, 7, 20),
+            isLucid = false,
+            lucidity = null,
+            clarity = 5,
+            isNightmare = false,
+            isRecurring = false,
+            moods = emptySet(),
+            tagNames = emptyList(),
+        )
+        val editor = newEditor(SavedStateHandle(mapOf("dreamId" to id)))
+        editor.awaitState { it.isReady && it.title.isNotEmpty() }
+
+        editor.onTitleChange("")
+        editor.onContentChange("")
+        editor.saveAndWait()
+
+        assertEquals(
+            "emptying a stored dream's fields must never delete the dream itself",
+            1,
+            liveDreams().size,
+        )
+    }
+
+    @Test
     fun duplicateTagsAreIgnoredRegardlessOfCase() = runTest {
         val editor = newEditor()
         editor.onTitleChange("Flying")
