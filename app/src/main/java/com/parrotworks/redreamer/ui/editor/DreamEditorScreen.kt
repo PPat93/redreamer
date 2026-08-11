@@ -283,6 +283,9 @@ private fun DreamDatePickerField(date: LocalDate, onDateChange: (LocalDate) -> U
             initialDate = date,
             onDismissRequest = { showPicker = false },
             onDateSelected = onDateChange,
+            // A dream can't have happened tomorrow. Without this, one mistyped year parks a dream
+            // permanently at the top of the list, since dreamDate is the sort key.
+            maxDate = LocalDate.now(),
         )
     }
 }

@@ -27,6 +27,7 @@
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_back">Back</string>
+    <string name="action_ok">OK</string>
     <string name="dream_untitled">Untitled dream</string>
 
     <!-- Labels inside copied/shared dream text. Part of what the user sends to other people, so

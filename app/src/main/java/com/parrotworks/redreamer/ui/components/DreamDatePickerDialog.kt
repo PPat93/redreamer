@@ -18,6 +18,10 @@ import java.time.ZoneOffset
 /**
  * [minDate] and [maxDate] grey out impossible choices rather than letting the user pick something
  * invalid and be quietly shown nothing — used by the filter sheet to keep a date range in order.
+ *
+ * Dates cross the Material3 boundary as UTC epoch millis, which is what its API specifies, so the
+ * conversions here use [ZoneOffset.UTC] deliberately: reading the result back in the device's zone
+ * is the classic way to land a day early or late.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +56,8 @@ fun DreamDatePickerDialog(
                 }
                 onDismissRequest()
             }) {
-                Text(stringResource(R.string.action_save))
+                // "OK", not "Save" — picking a date doesn't commit anything on its own.
+                Text(stringResource(R.string.action_ok))
             }
         },
         dismissButton = {
